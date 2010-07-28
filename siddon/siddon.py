@@ -7,7 +7,7 @@ import os
 import pyfits
 import fitsarray as fa
 import lo
-from _C_siddon import siddon
+from _C_siddon import siddon as C_siddon
 
 # constants
 solar_radius = 695000 # in km
@@ -15,26 +15,26 @@ arcsecond_to_radian = np.pi/648000 #pi/(60*60*180)
 
 # projector
 def projector(data, cube):
-    data = data.astype('float32')
-    cube = cube.astype('float32')
+    data[:] = data.astype('float32')
+    cube[:] = cube.astype('float32')
     for k in data.header:
         if data.header[k].dtype == np.dtype('float64'):
             data.header[k] = data.header[k].astype('float32')
     for k in cube.header:
         cube.header[k] = np.float32(cube.header[k])
     cube.header = dict(cube.header)
-    return siddon(data, cube, 0)
+    C_siddon(data, cube, 0)
 
 def backprojector(data, cube):
-    data = data.astype('float32')
-    cube = cube.astype('float32')
+    data[:] = data.astype('float32')
+    cube[:] = cube.astype('float32')
     for k in data.header:
         if data.header[k].dtype == np.dtype('float64'):
             data.header[k] = data.header[k].astype('float32')
     for k in cube.header:
         cube.header[k] = np.float32(cube.header[k])
     cube.header = dict(cube.header)
-    return siddon(data, cube, 1)
+    C_siddon(data, cube, 1)
 
 def siddon_lo(data, cube):
     def matvec(x):
