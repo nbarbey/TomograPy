@@ -24,6 +24,7 @@ def projector(data, cube):
         cube.header[k] = np.float32(cube.header[k])
     cube.header = dict(cube.header)
     C_siddon(data, cube, 0)
+    return data
 
 def backprojector(data, cube):
     data[:] = data.astype('float32')
@@ -35,13 +36,31 @@ def backprojector(data, cube):
         cube.header[k] = np.float32(cube.header[k])
     cube.header = dict(cube.header)
     C_siddon(data, cube, 1)
+    return cube
 
-def siddon_lo(data, cube):
+def siddon_lo(data_header, cube_header):
+    data = dataarray_from_header(data_header)
+    data[:] = 0
+    cube = fa.fitsarray_from_header(cube_header)
+    cube[:] = 0
     def matvec(x):
-        return projector(data, x)
+        y = dataarray_from_header(data_header)
+        y[:] = 0
+        projector(y.astype(np.float32), x.astype(np.float32))
+        return y
     def rmatvec(x):
-        return backprojector(x, cube)
-    return lo.ndoperator(cube.shape, data.shape, matvec=matvec, rmatvec=rmatvec)
+        y = fa.fitsarray_from_header(cube_header)
+        y[:] = 0
+        backprojector(x.astype(np.float32), y.astype(np.float32))
+        return y
+    return lo.ndsubclass(cube, data, matvec=matvec, rmatvec=rmatvec)
+
+def dataarray_from_header(header):
+    shape = [int(header['NAXIS' + str(i + 1)][0])
+             for i in xrange(int(header['NAXIS'][0]))]
+    shape += len(header['NAXIS']),
+    dtype = fa.bitpix[str(int(header['BITPIX'][0]))]
+    return fa.InfoArray(shape, header=header, dtype=dtype)
 
 # data handling
 def read_secchi_data(path, dtype=np.float32, bin_factor=None, **kargs):
@@ -82,6 +101,42 @@ def update_header(array):
         raise ValueError('array header does not have an INSTRUME keyword')
     if array.header['INSTRUME'] == 'SECCHI':
         secchi_update_header(array)
+
+# SECCHI specific code
+def secchi_update_header(array):
+    # read useful keywords
+    lon = array.header['HEL_LON']
+    lat = array.header['HEL_LAT']
+    rol = np.radians(array.header['SC_ROLL'])
+    x = array.header['HEC_X']
+    y = array.header['HEC_Y']
+    z = array.header['HEC_Z']
+    # infere linked values
+    d = np.sqrt(x ** 2 + y ** 2 + z ** 2) / solar_radius
+    xd = d * np.cos(lat) * np.cos(lon)
+    yd = d * np.cos(lat) * np.sin(lon)
+    zd = d * np.sin(lat)
+    # update the header
+    array.header.update('lon', lon)
+    array.header.update('lat', lat)
+    array.header.update('rol', rol)
+    array.header.update('d', d)
+    array.header.update('xd', xd)
+    array.header.update('yd', yd)
+    array.header.update('zd', zd)
+    # convert to radians
+    array.header['CDELT1'] *= arcsecond_to_radian
+    array.header['CDELT2'] *= arcsecond_to_radian
+    # others
+    time_str = array.header['DATE_OBS']
+    array.header.update('time', secchi_convert_time(time_str))
+
+def secchi_convert_time(time_str):
+    time_str = time_str[:-4]
+    format = '%Y-%m-%dT%H:%M:%S'
+    current_time = time.strptime(time_str, format)
+    current_time = time.mktime(current_time)
+    return current_time
 
 def filter_files(files, instrume=None, obsrvtry=None, detector=None, 
                  time_window=None, time_step=None):
@@ -141,38 +196,3 @@ def time_compare(x, y):
     else: # a < b
         return -1
 
-# SECCHI specific code
-def secchi_update_header(array):
-    # read useful keywords
-    lon = array.header['HEL_LON']
-    lat = array.header['HEL_LAT']
-    rol = np.radians(array.header['SC_ROLL'])
-    x = array.header['HEC_X']
-    y = array.header['HEC_Y']
-    z = array.header['HEC_Z']
-    # infere linked values
-    d = np.sqrt(x ** 2 + y ** 2 + z ** 2) / solar_radius
-    xd = d * np.cos(lat) * np.cos(lon)
-    yd = d * np.cos(lat) * np.sin(lon)
-    zd = d * np.sin(lat)
-    # update the header
-    array.header.update('lon', lon)
-    array.header.update('lat', lat)
-    array.header.update('rol', rol)
-    array.header.update('d', d)
-    array.header.update('xd', xd)
-    array.header.update('yd', yd)
-    array.header.update('zd', zd)
-    # convert to radians
-    array.header['CDELT1'] *= arcsecond_to_radian
-    array.header['CDELT2'] *= arcsecond_to_radian
-    # others
-    time_str = array.header['DATE_OBS']
-    array.header.update('time', secchi_convert_time(time_str))
-
-def secchi_convert_time(time_str):
-    time_str = time_str[:-4]
-    format = '%Y-%m-%dT%H:%M:%S'
-    current_time = time.strptime(time_str, format)
-    current_time = time.mktime(current_time)
-    return current_time
