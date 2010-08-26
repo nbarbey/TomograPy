@@ -46,12 +46,12 @@ def siddon_lo(data_header, cube_header):
     def matvec(x):
         y = dataarray_from_header(data_header)
         y[:] = 0
-        projector(y.astype(np.float32), x.astype(np.float32))
+        projector(y, x.astype(np.float32))
         return y
     def rmatvec(x):
         y = fa.fitsarray_from_header(cube_header)
         y[:] = 0
-        backprojector(x.astype(np.float32), y.astype(np.float32))
+        backprojector(x.astype(np.float32), y)
         return y
     return lo.ndsubclass(cube, data, matvec=matvec, rmatvec=rmatvec)
 
