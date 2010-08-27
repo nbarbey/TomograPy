@@ -69,40 +69,12 @@ typedef struct
   float zmax;  
 }RoiO;
 
-/*parameters of the Projections regions of interests and binnings */
-typedef struct
-{
-  /*size of the full image (must be a power of 2)*/
-  int bin1;
-  int bin2;
-  /*first pixel of the ROI position assuming a 256 pix size*/
-  int first1;
-  int first2;
-  /*last pixel*/
-  int last1;
-  int last2;
-}RoiP;
-
-/*basic image structure*/
-typedef struct
-{
-  int naxes[2]; /*image dimensions*/
-  float ** pixel; /*image pixel values*/
-}image;
-
 /*a basic cube structure to store object or projection data */
 typedef struct
 {
   int naxes[3];  /*size of each dimension*/
   float *** voxel; /*data*/
 }cube;
-
-/*stack of projections (ie a dynamic array of images)*/
-typedef struct
-{
-  int n; /*number of projections*/
-  image * images; /* dynamic array of images */
-}stack;
 
 int Siddon(
 	   PyArrayObject*, /* 2D array containing the projection*/
