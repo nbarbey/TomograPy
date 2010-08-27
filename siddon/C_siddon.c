@@ -165,23 +165,24 @@ int Siddon(PyArrayObject * data,
   /* distance of the current voxel to the detector   */
   double ac; 
   /* array containing the distances to the 6 faces of the volume*/
-  double ax1, axn, ay1, ayn, az1, azn;
+  double a1[3];
+  double an[3];
   /* minimum of the distance array and it subscript */
   double amin, amax;
   /* coordinates of the initial and final points */
-  double xe, ye, ze;
+  double e[3];
   /* intersections avec les differentes faces */
   double axmin, axmax, aymin, aymax, azmin, azmax;
   /* subscripts of the current voxel */
-  int iv, jv, kv;
+  int iv[3];
   /* voxel initial */
-  int ie, je, ke;
+  int ie[3];
   /* distances to the next intersection with a x,y or z constant
      plan of the grid */
-  double dx, dy, dz;
+  double p[3];
   /* current distances to the next intersection with a x,y or z 
      constant plan of the grid */
-  double Dx, Dy, Dz;
+  double D[3];
   /* to discriminate between increasing and decreasing of voxel 
      subscripts*/
   int iupdate, jupdate, kupdate, inext, jnext, knext, itemp, jtemp, ktemp;
@@ -206,33 +207,33 @@ int Siddon(PyArrayObject * data,
 	/* impact point determination */
 	/* distances to faces */
 	if(u0[0] == 0){
-	  dx = INF;
-	  ax1 = INF;
-	  axn = INF;}
+	  p[0] = INF;
+	  a1[0] = INF;
+	  an[0] = INF;}
 	else{
-	  dx = RoiO.p[0]/u0[0];
-	  ax1 = (RoiO.min[0] - orbit.M[0])/u0[0];
-	  axn = (RoiO.max[0] - orbit.M[0])/u0[0];}
+	  p[0] = RoiO.p[0]/u0[0];
+	  a1[0] = (RoiO.min[0] - orbit.M[0])/u0[0];
+	  an[0] = (RoiO.max[0] - orbit.M[0])/u0[0];}
 	if(u0[1] == 0){
-	  dy = INF;
-	  ay1 = INF;
-	  ayn = INF;}
+	  p[1] = INF;
+	  a1[1] = INF;
+	  an[1] = INF;}
 	else{
-	  dy = RoiO.p[1]/u0[1];
-	  ay1 = (RoiO.min[1] - orbit.M[1])/u0[1];
-	  ayn = (RoiO.max[1] - orbit.M[1])/u0[1];}
+	  p[1] = RoiO.p[1]/u0[1];
+	  a1[1] = (RoiO.min[1] - orbit.M[1])/u0[1];
+	  an[1] = (RoiO.max[1] - orbit.M[1])/u0[1];}
 	if(u0[2] == 0){
-	  dz = INF;
-	  az1 = INF;
-	  azn = INF;}
+	  p[2] = INF;
+	  a1[2] = INF;
+	  an[2] = INF;}
 	else{
-	  dz = RoiO.p[2]/u0[2];
-	  az1 = (RoiO.min[2] - orbit.M[2])/u0[2];
-	  azn = (RoiO.max[2] - orbit.M[2])/u0[2];}
+	  p[2] = RoiO.p[2]/u0[2];
+	  a1[2] = (RoiO.min[2] - orbit.M[2])/u0[2];
+	  an[2] = (RoiO.max[2] - orbit.M[2])/u0[2];}
  
-	Compare(&axmin,&axmax,ax1,axn);
-	Compare(&aymin,&aymax,ay1,ayn);
-	Compare(&azmin,&azmax,az1,azn);
+	Compare(&axmin,&axmax,a1[0],an[0]);
+	Compare(&aymin,&aymax,a1[1],an[1]);
+	Compare(&azmin,&azmax,a1[2],an[2]);
 
 	amin = max3(axmin,aymin,azmin);
 	amax = min3(axmax,aymax,azmax);
@@ -240,106 +241,106 @@ int Siddon(PyArrayObject * data,
 	if(amin < amax)
 	{
 	  /* initial and final points in cartesian coordinates */
-	  xe = orbit.M[0] + amin * u0[0];
-	  ye = orbit.M[1] + amin * u0[1];
-	  ze = orbit.M[2] + amin * u0[2];
+	  e[0] = orbit.M[0] + amin * u0[0];
+	  e[1] = orbit.M[1] + amin * u0[1];
+	  e[2] = orbit.M[2] + amin * u0[2];
 	  
 	  iupdate = signe(u0[0]);
 	  jupdate = signe(u0[1]);
 	  kupdate = signe(u0[2]);
 	  
 	  /*  initial intersection*/ 
-	  itemp = (int)( (xe - RoiO.min[0]) / RoiO.p[0]);
-	  jtemp = (int)( (ye - RoiO.min[1]) / RoiO.p[1]);
-	  ktemp = (int)( (ze - RoiO.min[2]) / RoiO.p[2]);
+	  itemp = (int)( (e[0] - RoiO.min[0]) / RoiO.p[0]);
+	  jtemp = (int)( (e[1] - RoiO.min[1]) / RoiO.p[1]);
+	  ktemp = (int)( (e[2] - RoiO.min[2]) / RoiO.p[2]);
 	  /* initial voxel of each kind */
-	  ie = itemp - (int)( (xe - RoiO.min[0]) / RoiO.d[0]);
-	  je = jtemp - (int)( (ye - RoiO.min[1]) / RoiO.d[1]);
-	  ke = ktemp - (int)( (ze - RoiO.min[2]) / RoiO.d[2]);
+	  ie[0] = itemp - (int)( (e[0] - RoiO.min[0]) / RoiO.d[0]);
+	  ie[1] = jtemp - (int)( (e[1] - RoiO.min[1]) / RoiO.d[1]);
+	  ie[2] = ktemp - (int)( (e[2] - RoiO.min[2]) / RoiO.d[2]);
 	  
 	  /* next intersection of each kind */
 	  if(iupdate == 1)
-	    inext = ie + 1;
+	    inext = ie[0] + 1;
 	  else if(iupdate == -1)
-	    inext = ie;
+	    inext = ie[0];
 	  else
 	    inext = INF*RoiO.n[0];
 	  if(jupdate == 1)
-	    jnext = je + 1;
+	    jnext = ie[1] + 1;
 	  else if(jupdate == -1)
-	    jnext = je;
+	    jnext = ie[1];
 	  else
 	    jnext = INF*RoiO.n[1];
 	  if(kupdate == 1)
-	    knext = ke + 1;
+	    knext = ie[2] + 1;
 	  else if(kupdate == -1)
-	    knext = ke;
+	    knext = ie[2];
 	  else
 	    knext = INF*RoiO.n[2];
 	  
-	  Dx = inext * dx + ax1 - amin;
-	  Dy = jnext * dy + ay1 - amin;
-	  Dz = knext * dz + az1 - amin;
+	  D[0] = inext * p[0] + a1[0] - amin;
+	  D[1] = jnext * p[1] + a1[1] - amin;
+	  D[2] = knext * p[2] + a1[2] - amin;
 	   
 	  /*boucle initilisation */
 	  ac = amin;
 	  d = distance_to_center(orbit, u0, ac);
-	  iv = ie;
-	  jv = je;
-	  kv = ke;
+	  iv[0] = ie[0];
+	  iv[1] = ie[1];
+	  iv[2] = ie[2];
 
-	  while( (iv >= 0) && (iv <RoiO.n[0]) && (jv >= 0) && (jv < RoiO.n[1] ) && (kv >= 0 ) && (kv < RoiO.n[2]) && (d > 1 ))
+	  while( (iv[0] >= 0) && (iv[0] <RoiO.n[0]) && (iv[1] >= 0) && (iv[1] < RoiO.n[1] ) && (iv[2] >= 0 ) && (iv[2] < RoiO.n[2]) && (d > 1 ))
 	  {
 	    /* discriminate intersection with x,y and z = cte plan */
-	    if((Dx<=Dy)&&(Dx<=Dz))
+	    if((D[0]<=D[1])&&(D[0]<=D[2]))
 	    {
 	      {
-		ac += Dx;
+		ac += D[0];
 		d = distance_to_center(orbit, u0, ac);
 		/* projection/backprojection*/
 		if(!BPJ)
-		  FIND3(data, i, j, t) += Dx * FIND3(cube, iv, jv, kv);
+		  FIND3(data, i, j, t) += D[0] * FIND3(cube, iv[0], iv[1], iv[2]);
 		else
-		  FIND3(cube, iv, jv, kv) += Dx * FIND3(data, i, j, t);
+		  FIND3(cube, iv[0], iv[1], iv[2]) += D[0] * FIND3(data, i, j, t);
 		/* update voxel subscript */
-		iv += iupdate;
+		iv[0] += iupdate;
 		/* update distances to next intersections*/
-		Dy -= Dx;
-		Dz -= Dx;
-		Dx = fabs(dx);
+		D[1] -= D[0];
+		D[2] -= D[0];
+		D[0] = fabs(p[0]);
 	      }
 	    }
-	    else if((Dy<Dx)&&(Dy<=Dz))
+	    else if((D[1]<D[0])&&(D[1]<=D[2]))
 	    {
-	      ac += Dy;
+	      ac += D[1];
 	      d = distance_to_center(orbit, u0, ac);
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		FIND3(data, i, j, t) += Dy * FIND3(cube, iv, jv, kv);
+		FIND3(data, i, j, t) += D[1] * FIND3(cube, iv[0], iv[1], iv[2]);
 	      else
-		FIND3(cube, iv, jv, kv) += Dy * FIND3(data, i, j, t);
+		FIND3(cube, iv[0], iv[1], iv[2]) += D[1] * FIND3(data, i, j, t);
 	      /* update voxel subscript */
-	      jv += jupdate;
+	      iv[1] += jupdate;
 	      /* update distances to next intersections*/
-	      Dx -= Dy;
-	      Dz -= Dy;
-	      Dy = fabs(dy);
+	      D[0] -= D[1];
+	      D[2] -= D[1];
+	      D[1] = fabs(p[1]);
 	    }
-	    else if((Dz<Dx)&&(Dz<Dy))
+	    else if((D[2]<D[0])&&(D[2]<D[1]))
 	    {
-	      ac += Dz;
+	      ac += D[2];
 	      d = distance_to_center(orbit, u0, ac);
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		FIND3(data, i, j, t) += Dz * FIND3(cube, iv, jv, kv);
+		FIND3(data, i, j, t) += D[2] * FIND3(cube, iv[0], iv[1], iv[2]);
 	      else
-		FIND3(cube, iv, jv, kv) += Dz * FIND3(data, i, j, t);
+		FIND3(cube, iv[0], iv[1], iv[2]) += D[2] * FIND3(data, i, j, t);
 	      /* update voxel subscript */
-	      kv += kupdate;
+	      iv[2] += kupdate;
 	      /* update distances to next intersections*/
-	      Dx -= Dz;
-	      Dy -= Dz;
-	      Dz = fabs(dz);
+	      D[0] -= D[2];
+	      D[1] -= D[2];
+	      D[2] = fabs(p[2]);
 	    }
 	  }
 	}
