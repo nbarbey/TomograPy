@@ -1,6 +1,6 @@
 /*
-  Siddon algorithm  and python warper It performs  3D conic projection
-  and backprojection for tomography applications
+  C Siddon algorithm and its python wrapper. It performs 3D conic projection
+  and backprojection for tomography applications.
 */
 
 #include "Python.h"

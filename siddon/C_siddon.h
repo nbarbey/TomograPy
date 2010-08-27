@@ -1,10 +1,5 @@
-#define SOLAR_RADIUS 695000. /* in km */
-#define ARCSECOND_TO_RADIANS 0.00000484813681 /* = pi/(60*60*180) */
 #define EPSILON 0.00001
-#define ROIP_PIXEL_BASE 256
 #define INF 1000000. /* en rayons solaires*/
-#define DEGRE_TO_RADIAN 0.017453
-#define N_MAX 1024/*max size of the cube in number of voxels*/
 
 /* define the detector parameters */
 typedef struct

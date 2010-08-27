@@ -4,3 +4,4 @@ and solar tomography reconstructions
 """
 
 from siddon import *
+import secchi
