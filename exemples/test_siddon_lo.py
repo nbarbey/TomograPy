@@ -22,13 +22,13 @@ for i in xrange(1, 4):
     header['CDELT' + str(i)] = 0.0234375
     header['CRVAL' + str(i)] = 0.
 cube = fa.zeros(shape, header=header, dtype=np.float32)
-P = siddon.siddon_lo(data.header, cube.header)
+P = siddon.siddon_sun_lo(data.header, cube.header)
 t = time.time()
 fbp = (P.T * data.flatten()).reshape(cube.shape)
 print("backprojection time : " + str(time.time() - t))
 
 t = time.time()
-fbp0 = siddon.backprojector(data, cube)
+fbp0 = siddon.backprojector_sun(data, cube)
 print("backprojection time : " + str(time.time() - t))
 
 assert np.all(fbp == fbp0)

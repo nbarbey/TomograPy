@@ -7,6 +7,7 @@ import os
 import pyfits
 import fitsarray as fa
 import lo
+from _C_siddon import siddon_sun as C_siddon_sun
 from _C_siddon import siddon as C_siddon
 
 # constants
@@ -52,6 +53,47 @@ def siddon_lo(data_header, cube_header):
         y = fa.fitsarray_from_header(cube_header)
         y[:] = 0
         backprojector(x.astype(np.float32), y)
+        return y
+    return lo.ndsubclass(cube, data, matvec=matvec, rmatvec=rmatvec)
+
+def projector_sun(data, cube):
+    data[:] = data.astype('float32')
+    cube[:] = cube.astype('float32')
+    for k in data.header:
+        if data.header[k].dtype == np.dtype('float64'):
+            data.header[k] = data.header[k].astype('float32')
+    for k in cube.header:
+        cube.header[k] = np.float32(cube.header[k])
+    cube.header = dict(cube.header)
+    C_siddon_sun(data, cube, 0)
+    return data
+
+def backprojector_sun(data, cube):
+    data[:] = data.astype('float32')
+    cube[:] = cube.astype('float32')
+    for k in data.header:
+        if data.header[k].dtype == np.dtype('float64'):
+            data.header[k] = data.header[k].astype('float32')
+    for k in cube.header:
+        cube.header[k] = np.float32(cube.header[k])
+    cube.header = dict(cube.header)
+    C_siddon_sun(data, cube, 1)
+    return cube
+
+def siddon_sun_lo(data_header, cube_header):
+    data = dataarray_from_header(data_header)
+    data[:] = 0
+    cube = fa.fitsarray_from_header(cube_header)
+    cube[:] = 0
+    def matvec(x):
+        y = dataarray_from_header(data_header)
+        y[:] = 0
+        projector_sun(y, x.astype(np.float32))
+        return y
+    def rmatvec(x):
+        y = fa.fitsarray_from_header(cube_header)
+        y[:] = 0
+        backprojector_sun(x.astype(np.float32), y)
         return y
     return lo.ndsubclass(cube, data, matvec=matvec, rmatvec=rmatvec)
 
@@ -195,4 +237,3 @@ def time_compare(x, y):
         return 0
     else: # a < b
         return -1
-

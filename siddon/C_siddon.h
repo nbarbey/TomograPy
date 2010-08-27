@@ -48,6 +48,7 @@ typedef struct
 }RoiO;
 
 void init_C_siddon();
+static PyObject *call_siddon_sun(PyObject *self, PyObject *args);
 static PyObject *call_siddon(PyObject *self, PyObject *args);
 
 int  not_doublematrix(PyArrayObject *mat);
@@ -64,6 +65,16 @@ int rotation_matrix(orbit, double [3][3]);
 int define_unit_vector(double, double, double[3]);
 int apply_rotation(double[3][3] , double[3], double[3]);
 double distance_to_center(orbit, double *, double);
+
+int SiddonSun(
+	   PyArrayObject*, /* 2D array containing the projection*/
+	   int, /* current time index */
+	   PyArrayObject*, /* 3D array containing the object */
+	   orbit, /* orbit structure containing detector position parameters */
+	   RoiO, /* volume structure containing object discretization parameters*/
+	   detector, /* detector structure containing detector discretization parameters */
+	   int /* projection or backprojection flag : 1 if backprojection */
+	   );/* output 1 if no error */
 
 int Siddon(
 	   PyArrayObject*, /* 2D array containing the projection*/
