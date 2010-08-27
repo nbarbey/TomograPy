@@ -152,7 +152,7 @@ int Siddon(PyArrayObject * data,
 {
   /* declarations */
   /* loop incremented integers*/
-  int i, j ,k;
+  int i, j ,k, m, n;
   /* to store constants defining the ray direction */
   /* lambda : latitude, longitude */
   double lambda, gamma;
@@ -165,15 +165,13 @@ int Siddon(PyArrayObject * data,
   /* distance of the current voxel to the detector   */
   double ac; 
   /* array containing the distances to the 6 faces of the volume*/
-  double a1[3];
-  double an[3];
+  double a1[3], an[3];
   /* minimum of the distance array and it subscript */
   double amin, amax;
   /* coordinates of the initial and final points */
   double e[3];
   /* intersections avec les differentes faces */
-  double Imin[3];
-  double Imax[3];
+  double Imin[3], Imax[3];
   /* subscripts of the current voxel */
   int iv[3];
   /* voxel initial */
@@ -186,9 +184,7 @@ int Siddon(PyArrayObject * data,
   double D[3];
   /* to discriminate between increasing and decreasing of voxel 
      subscripts*/
-  int update[3];
-  int next[3];
-  int temp[3];
+  int update[3], next[3], temp[3];
   /* distance to Sun center */
   double d;
   
@@ -223,8 +219,8 @@ int Siddon(PyArrayObject * data,
 	  Compare(&Imin[k], &Imax[k] ,a1[k], an[k]);
 	}
 
-	amin = max3(Imin[0],Imin[1],Imin[2]);
-	amax = min3(Imax[0],Imax[1],Imax[2]);
+	amin = max3(Imin[0], Imin[1], Imin[2]);
+	amax = min3(Imax[0], Imax[1], Imax[2]);
 	
 	if(amin < amax)
 	{
@@ -248,33 +244,30 @@ int Siddon(PyArrayObject * data,
 	    D[k] = next[k] * p[k] + a1[k] - amin;
 	  }
 	   
-	  /*boucle initilisation */
+	  /* loop initilization */
 	  ac = amin;
 	  d = distance_to_center(orbit, u0, ac);
 	  iv[0] = ie[0];
 	  iv[1] = ie[1];
 	  iv[2] = ie[2];
 
-	  while( (iv[0] >= 0) && (iv[0] <RoiO.n[0]) && (iv[1] >= 0) && (iv[1] < RoiO.n[1] ) && (iv[2] >= 0 ) && (iv[2] < RoiO.n[2]) && (d > 1 ))
+	  while( (iv[0] >= 0) && (iv[0] < RoiO.n[0]) && (iv[1] >= 0) && (iv[1] < RoiO.n[1] ) && (iv[2] >= 0 ) && (iv[2] < RoiO.n[2]) && (d > 1 ))
 	  {
-	    /* discriminate intersection with x,y and z = cte plan */
 	    if((D[0]<=D[1])&&(D[0]<=D[2]))
 	    {
-	      {
-		ac += D[0];
-		d = distance_to_center(orbit, u0, ac);
-		/* projection/backprojection*/
-		if(!BPJ)
-		  FIND3(data, i, j, t) += D[0] * FIND3(cube, iv[0], iv[1], iv[2]);
-		else
-		  FIND3(cube, iv[0], iv[1], iv[2]) += D[0] * FIND3(data, i, j, t);
-		/* update voxel subscript */
-		iv[0] += update[0];
-		/* update distances to next intersections*/
-		D[1] -= D[0];
-		D[2] -= D[0];
-		D[0] = fabs(p[0]);
-	      }
+	      ac += D[0];
+	      d = distance_to_center(orbit, u0, ac);
+	      /* projection/backprojection*/
+	      if(!BPJ)
+		FIND3(data, i, j, t) += D[0] * FIND3(cube, iv[0], iv[1], iv[2]);
+	      else
+		FIND3(cube, iv[0], iv[1], iv[2]) += D[0] * FIND3(data, i, j, t);
+	      /* update voxel subscript */
+	      iv[0] += update[0];
+	      /* update distances to next intersections*/
+	      D[1] -= D[0];
+	      D[2] -= D[0];
+	      D[0] = fabs(p[0]);
 	    }
 	    else if((D[1]<D[0])&&(D[1]<=D[2]))
 	    {
