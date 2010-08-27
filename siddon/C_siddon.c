@@ -154,81 +154,54 @@ int Siddon(PyArrayObject * data,
   /* loop incremented integers*/
   int i, j /*,k*/;
   /* to store constants defining the ray direction */
-  /* lambda : latitude of the current line */
-  double lambda;
-  /* gamma : longitude of the current line */
-  double gamma;
+  /* lambda : latitude, longitude */
+  double lambda, gamma;
   /* normalized direction vector in image referentiel */
   double u2[3];
   /* in solar referentiel */
   double u0[3];
-    /* rotation matrix from image to solar referentiel */
+  /* rotation matrix from image to solar referentiel */
   double R[3][3];
   /* distance of the current voxel to the detector   */
   double ac; 
   /* array containing the distances to the 6 faces of the volume*/
-  double ax1,axn,ay1,ayn,az1,azn;
+  double ax1, axn, ay1, ayn, az1, azn;
   /* minimum of the distance array and it subscript */
-  double amin,amax;
+  double amin, amax;
   /* coordinates of the initial and final points */
-  double xe,ye,ze;
+  double xe, ye, ze;
   /* intersections avec les differentes faces */
-  double axmin,axmax,aymin,aymax,azmin,azmax;  	      
+  double axmin, axmax, aymin, aymax, azmin, azmax;
   /* subscripts of the current voxel */
-  int iv,jv,kv;
+  int iv, jv, kv;
   /* voxel initial */
-  int ie,je,ke;
+  int ie, je, ke;
   /* distances to the next intersection with a x,y or z constant
      plan of the grid */
-  double dx,dy,dz;
+  double dx, dy, dz;
   /* current distances to the next intersection with a x,y or z 
      constant plan of the grid */
-  double Dx,Dy,Dz;
+  double Dx, Dy, Dz;
   /* to discriminate between increasing and decreasing of voxel 
      subscripts*/
-  int iupdate,jupdate,kupdate,inext,jnext,knext,itemp,jtemp,ktemp;
-  /* to define the rotation matrix*/
-  double cosln,sinln,coslt,sinlt,cosrl,sinrl;
+  int iupdate, jupdate, kupdate, inext, jnext, knext, itemp, jtemp, ktemp;
   /* distance to Sun center */
   double d;
   
   /* eq 10 with roll angle */
-  cosln = cos(orbit.lon);
-  sinln = sin(orbit.lon);
-  coslt = cos(orbit.lat);
-  sinlt = sin(orbit.lat);
-  cosrl = cos(orbit.rol);
-  sinrl = sin(orbit.rol);
-
-  R[0][0] = - cosln * coslt;
-  R[0][1] = - sinln * cosrl - cosln * sinlt * sinrl;
-  R[0][2] =   sinln * sinrl - cosln * sinlt * cosrl;
-  R[1][0] = - sinln * coslt;
-  R[1][1] =   cosln * cosrl - sinln * sinlt * sinrl;
-  R[1][2] = - cosln * sinrl - sinln * sinlt * cosrl;
-  R[2][0] = - sinlt;
-  R[2][1] =   coslt * sinrl;
-  R[2][2] =   coslt * cosrl;
-
+  rotation_matrix(orbit, R);
   /* loops on angles (detectors pixels) */
   for(i = 0 ; i < detector.n1 ; i++)
   {
-    gamma = (i-detector.s1)*detector.p1; /*eq (9) */ 
+    gamma = (i - detector.s1) * detector.p1; /*eq (9) */ 
     for(j = 0 ; j < detector.n2 ; j++)
     {
-      /* ne calcul rien si la valeure est NaN */
+      /* skip computation if the value is a NaN */
       if( (!BPJ) || (isNaN(FIND3(data, i, j, t)) == 0 ) )
       {
-	lambda = (j-detector.s2)*detector.p2; /*eq (9) */
-	
-	u2[0] = cos(lambda)*cos(gamma);
-	u2[1] = cos(lambda)*sin(gamma);
-	u2[2] = sin(lambda);
-	
-	u0[0] = R[0][0] * u2[0] + R[0][1] * u2[1] + R[0][2] * u2[2];
-	u0[1] = R[1][0] * u2[0] + R[1][1] * u2[1] + R[1][2] * u2[2];
-	u0[2] = R[2][0] * u2[0] + R[2][1] * u2[1] + R[2][2] * u2[2];
-
+	lambda = (j - detector.s2) * detector.p2; /*eq (9) */
+	define_unit_vector(lambda, gamma, u2);
+	apply_rotation(R, u2, u0);
 	/* distances between 2 intersections of each kind */
 	/* impact point determination */
 	/* distances to faces */
@@ -310,7 +283,7 @@ int Siddon(PyArrayObject * data,
 	   
 	  /*boucle initilisation */
 	  ac = amin;
-	  d = SQ( orbit.xd + ac * u0[0]) + SQ( orbit.yd + ac * u0[1]) + SQ( orbit.zd + ac * u0[2]);
+	  d = distance_to_center(orbit, u0, ac);
 	  iv = ie;
 	  jv = je;
 	  kv = ke;
@@ -322,7 +295,7 @@ int Siddon(PyArrayObject * data,
 	    {
 	      {
 		ac += Dx;
-		d = SQ( orbit.xd + ac * u0[0]) + SQ( orbit.yd + ac * u0[1]) + SQ( orbit.zd + ac * u0[2]);
+		d = distance_to_center(orbit, u0, ac);
 		/* projection/backprojection*/
 		if(!BPJ)
 		  FIND3(data, i, j, t) += Dx * FIND3(cube, iv, jv, kv);
@@ -339,7 +312,7 @@ int Siddon(PyArrayObject * data,
 	    else if((Dy<Dx)&&(Dy<=Dz))
 	    {
 	      ac += Dy;
-	      d = SQ( orbit.xd + ac * u0[0]) + SQ( orbit.yd + ac * u0[1]) + SQ( orbit.zd + ac * u0[2]);
+	      d = distance_to_center(orbit, u0, ac);
 	      /* projection/backprojection*/
 	      if(!BPJ)
 		FIND3(data, i, j, t) += Dy * FIND3(cube, iv, jv, kv);
@@ -355,7 +328,7 @@ int Siddon(PyArrayObject * data,
 	    else if((Dz<Dx)&&(Dz<Dy))
 	    {
 	      ac += Dz;
-	      d = SQ( orbit.xd + ac * u0[0]) + SQ( orbit.yd + ac * u0[1]) + SQ( orbit.zd + ac * u0[2]);
+	      d = distance_to_center(orbit, u0, ac);
 	      /* projection/backprojection*/
 	      if(!BPJ)
 		FIND3(data, i, j, t) += Dz * FIND3(cube, iv, jv, kv);
@@ -376,7 +349,7 @@ int Siddon(PyArrayObject * data,
   return 0;
 }
 
-double min3(double x,double y,double z)
+double min3(double x, double y, double z)
 {
   if((x < y)&(x < z))
     return x;
@@ -386,7 +359,7 @@ double min3(double x,double y,double z)
     return z;
 }
 
-double max3(double x,double y,double z)
+double max3(double x, double y, double z)
 {
   if((x > y)&(x > z))
     return x;
@@ -406,7 +379,7 @@ int signe(double x)
     return 0;
 }
 
-void Compare(double * pumin,double * pumax, double u1, double u2)
+void Compare(double * pumin, double * pumax, double u1, double u2)
 {
   if (u1 > u2)
   {
@@ -418,4 +391,54 @@ void Compare(double * pumin,double * pumax, double u1, double u2)
     (*pumin) = u1;
     (*pumax) = u2;    
   }
+}
+
+int rotation_matrix(orbit orbit, double R[3][3])
+{
+  /* to define the rotation matrix*/
+  double cosln,sinln,coslt,sinlt,cosrl,sinrl;
+
+  cosln = cos(orbit.lon);
+  sinln = sin(orbit.lon);
+  coslt = cos(orbit.lat);
+  sinlt = sin(orbit.lat);
+  cosrl = cos(orbit.rol);
+  sinrl = sin(orbit.rol);
+
+  R[0][0] = - cosln * coslt;
+  R[0][1] = - sinln * cosrl - cosln * sinlt * sinrl;
+  R[0][2] =   sinln * sinrl - cosln * sinlt * cosrl;
+  R[1][0] = - sinln * coslt;
+  R[1][1] =   cosln * cosrl - sinln * sinlt * sinrl;
+  R[1][2] = - cosln * sinrl - sinln * sinlt * cosrl;
+  R[2][0] = - sinlt;
+  R[2][1] =   coslt * sinrl;
+  R[2][2] =   coslt * cosrl;
+
+  return 0;
+}
+
+int define_unit_vector(double lambda, double gamma, double u2[3])
+{
+  u2[0] = cos(lambda)*cos(gamma);
+  u2[1] = cos(lambda)*sin(gamma);
+  u2[2] = sin(lambda);
+
+  return 0;
+}
+
+int apply_rotation(double R[3][3], double u2[3], double u0[3])
+{
+  u0[0] = R[0][0] * u2[0] + R[0][1] * u2[1] + R[0][2] * u2[2];
+  u0[1] = R[1][0] * u2[0] + R[1][1] * u2[1] + R[1][2] * u2[2];
+  u0[2] = R[2][0] * u2[0] + R[2][1] * u2[1] + R[2][2] * u2[2];
+
+  return 0;
+}
+
+double distance_to_center(orbit orbit, double u0[3], double ac)
+{
+  double d;
+  d = SQ(orbit.xd + ac * u0[0]) + SQ(orbit.yd + ac * u0[1]) + SQ(orbit.zd + ac * u0[2]);
+  return d;
 }

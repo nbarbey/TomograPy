@@ -104,7 +104,6 @@ typedef struct
   image * images; /* dynamic array of images */
 }stack;
 
-/* compute the siddon algorithm */
 int Siddon(
 	   PyArrayObject*, /* 2D array containing the projection*/
 	   int, /* current time index */
@@ -114,3 +113,8 @@ int Siddon(
 	   detector, /* detector structure containing detector discretization parameters */
 	   int /* projection or backprojection flag : 1 if backprojection */
 	   );/* output 1 if no error */
+
+int rotation_matrix(orbit, double [3][3]);
+int define_unit_vector(double, double, double[3]);
+int apply_rotation(double[3][3] , double[3], double[3]);
+double distance_to_center(orbit, double *, double);
