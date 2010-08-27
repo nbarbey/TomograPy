@@ -6,15 +6,6 @@
 #define DEGRE_TO_RADIAN 0.017453
 #define N_MAX 1024/*max size of the cube in number of voxels*/
 
-
-void init_C_siddon();
-static PyObject *call_siddon(PyObject *self, PyObject *args);
-
-int  not_doublematrix(PyArrayObject *mat);
-double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
-double **ptrvector(long n);
-void free_Carrayptrs(double **v);
-
 /* define the detector parameters */
 typedef struct
 {
@@ -56,12 +47,23 @@ typedef struct
   float max[3];
 }RoiO;
 
-/*a basic cube structure to store object or projection data */
-typedef struct
-{
-  int naxes[3];  /*size of each dimension*/
-  float *** voxel; /*data*/
-}cube;
+void init_C_siddon();
+static PyObject *call_siddon(PyObject *self, PyObject *args);
+
+int  not_doublematrix(PyArrayObject *mat);
+double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
+double **ptrvector(long n);
+void free_Carrayptrs(double **v);
+
+double min3(double,double,double);
+double max3(double,double,double);
+int signe(double);
+void Compare(double*,double*,double,double);
+
+int rotation_matrix(orbit, double [3][3]);
+int define_unit_vector(double, double, double[3]);
+int apply_rotation(double[3][3] , double[3], double[3]);
+double distance_to_center(orbit, double *, double);
 
 int Siddon(
 	   PyArrayObject*, /* 2D array containing the projection*/
@@ -72,8 +74,3 @@ int Siddon(
 	   detector, /* detector structure containing detector discretization parameters */
 	   int /* projection or backprojection flag : 1 if backprojection */
 	   );/* output 1 if no error */
-
-int rotation_matrix(orbit, double [3][3]);
-int define_unit_vector(double, double, double[3]);
-int apply_rotation(double[3][3] , double[3], double[3]);
-double distance_to_center(orbit, double *, double);

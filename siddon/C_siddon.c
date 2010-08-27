@@ -133,14 +133,8 @@ static PyObject *call_siddon(PyObject *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
-
 #define isNaN(x) ((x) != (x))
 #define SQ(x) ((x) * (x))
-
-double min3(double,double,double);
-double max3(double,double,double);
-int signe(double);
-void Compare(double*,double*,double,double);
 
 int Siddon(PyArrayObject * data,
 	   int t,
@@ -152,7 +146,7 @@ int Siddon(PyArrayObject * data,
 {
   /* declarations */
   /* loop incremented integers*/
-  int i, j ,k, m, n;
+  int i, j ,k;
   /* to store constants defining the ray direction */
   /* lambda : latitude, longitude */
   double lambda, gamma;
@@ -239,7 +233,7 @@ int Siddon(PyArrayObject * data,
 	    else if(update[k] == -1)
 	      next[k] = ie[k];
 	    else
-	      next[k] = INF*RoiO.n[k];
+	      next[k] = INF * RoiO.n[k];
 
 	    D[k] = next[k] * p[k] + a1[k] - amin;
 	  }
@@ -380,8 +374,8 @@ int rotation_matrix(orbit orbit, double R[3][3])
 
 int define_unit_vector(double lambda, double gamma, double u2[3])
 {
-  u2[0] = cos(lambda)*cos(gamma);
-  u2[1] = cos(lambda)*sin(gamma);
+  u2[0] = cos(lambda) * cos(gamma);
+  u2[1] = cos(lambda) * sin(gamma);
   u2[2] = sin(lambda);
 
   return 0;
@@ -399,6 +393,8 @@ int apply_rotation(double R[3][3], double u2[3], double u0[3])
 double distance_to_center(orbit orbit, double u0[3], double ac)
 {
   double d;
-  d = SQ(orbit.M[0] + ac * u0[0]) + SQ(orbit.M[1] + ac * u0[1]) + SQ(orbit.M[2] + ac * u0[2]);
+  d = SQ(orbit.M[0] + ac * u0[0]);
+  d += SQ(orbit.M[1] + ac * u0[1]);
+  d += SQ(orbit.M[2] + ac * u0[2]);
   return d;
 }
