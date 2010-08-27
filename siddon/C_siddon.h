@@ -15,7 +15,6 @@ double **pymatrix_to_Carrayptrs(PyArrayObject *arrayin);
 double **ptrvector(long n);
 void free_Carrayptrs(double **v);
 
-
 /* define the detector parameters */
 typedef struct
 {
@@ -39,34 +38,22 @@ typedef struct
   float rol; /* roll angle in radians (angle between the image vertical and the Sun north pole taken positive clockwise )*/
   float d; /* distance in meters */
   /* cartesian coordinates in carrington */
-  float xd;
-  float yd;
-  float zd;
+  float M[3];
 }orbit;
 
 /* define the parameters of the Region of interest of the object */
 typedef struct
 {
   /*size of the object cube in solar radii */
-  float dx;
-  float dy;
-  float dz;
+  float d[3];
   /* steps in solar radius : 1 sr = 6.95E8 m */
-  float px;
-  float py;
-  float pz;
+  float p[3];
   /* size in pixels */
-  int nx;
-  int ny;
-  int nz;
+  int n[3];
   /* offset in solar radius : position of the firt pixel to center of rotation */
   /*bounds of the volume in solar radius*/
-  float xmin;
-  float xmax;
-  float ymin;
-  float ymax;
-  float zmin;
-  float zmax;  
+  float min[3];
+  float max[3];
 }RoiO;
 
 /*a basic cube structure to store object or projection data */

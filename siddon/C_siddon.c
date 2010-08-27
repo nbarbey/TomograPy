@@ -82,32 +82,32 @@ static PyObject *call_siddon(PyObject *self, PyObject *args)
   crpix2 = (PyArrayObject*)PyDict_GetItemString(header, "CRPIX2");
   /* Region of interest of the object */
   cube_header = PyObject_GetAttrString((PyObject*)map, "header");
-  RoiO.nx = nx;
-  RoiO.ny = ny;
-  RoiO.nz = nz;
+  RoiO.n[0] = nx;
+  RoiO.n[1] = ny;
+  RoiO.n[2] = nz;
   ocdelt1 = (PyObject*)PyDict_GetItemString(cube_header, "CDELT1");
   ocdelt2 = (PyObject*)PyDict_GetItemString(cube_header, "CDELT2");
   ocdelt3 = (PyObject*)PyDict_GetItemString(cube_header, "CDELT3");
-  RoiO.px = (float)PyFloat_AsDouble(ocdelt1);
-  RoiO.py = (float)PyFloat_AsDouble(ocdelt2);
-  RoiO.pz = (float)PyFloat_AsDouble(ocdelt3);
-  RoiO.dx = RoiO.px * nx;
-  RoiO.dy = RoiO.py * ny;
-  RoiO.dz = RoiO.pz * nz;
+  RoiO.p[0] = (float)PyFloat_AsDouble(ocdelt1);
+  RoiO.p[1] = (float)PyFloat_AsDouble(ocdelt2);
+  RoiO.p[2] = (float)PyFloat_AsDouble(ocdelt3);
+  RoiO.d[0] = RoiO.p[0] * nx;
+  RoiO.d[1] = RoiO.p[1] * ny;
+  RoiO.d[2] = RoiO.p[2] * nz;
   ocrpix1 = (PyObject*)PyDict_GetItemString(cube_header, "CRPIX1");
   ocrpix2 = (PyObject*)PyDict_GetItemString(cube_header, "CRPIX2");
   ocrpix3 = (PyObject*)PyDict_GetItemString(cube_header, "CRPIX3");
   cube_crpix1 = (float)PyFloat_AsDouble(ocrpix1);
   cube_crpix2 = (float)PyFloat_AsDouble(ocrpix2);
   cube_crpix3 = (float)PyFloat_AsDouble(ocrpix3);
-  RoiO.xmin = - cube_crpix1 * RoiO.px;
-  RoiO.ymin = - cube_crpix2 * RoiO.py;
-  RoiO.zmin = - cube_crpix3 * RoiO.pz;
-  RoiO.xmax = RoiO.xmin + RoiO.dx;
-  RoiO.ymax = RoiO.ymin + RoiO.dy;
-  RoiO.zmax = RoiO.zmin + RoiO.dz;
+  RoiO.min[0] = - cube_crpix1 * RoiO.p[0];
+  RoiO.min[1] = - cube_crpix2 * RoiO.p[1];
+  RoiO.min[2] = - cube_crpix3 * RoiO.p[2];
+  RoiO.max[0] = RoiO.min[0] + RoiO.d[0];
+  RoiO.max[1] = RoiO.min[1] + RoiO.d[1];
+  RoiO.max[2] = RoiO.min[2] + RoiO.d[2];
   /*printf("test\n");*/
-  /*printf("%f\n", RoiO.px);*/
+  /*printf("%f\n", RoiO.p[0]);*/
   /* Loop on the time / image dimension */
   #pragma omp parallel shared(RoiO, data, map, BPJ) private(t, orbit, detector)
   #pragma omp for
@@ -117,9 +117,9 @@ static PyObject *call_siddon(PyObject *self, PyObject *args)
     orbit.lat = FIND1(lat, t);
     orbit.rol = FIND1(rol, t);
     orbit.d = FIND1(d, t);
-    orbit.xd = FIND1(xd, t);
-    orbit.yd = FIND1(yd, t);
-    orbit.zd = FIND1(zd, t);
+    orbit.M[0] = FIND1(xd, t);
+    orbit.M[1] = FIND1(yd, t);
+    orbit.M[2] = FIND1(zd, t);
     /* define the detector of current image */
     detector.p1 = FIND1(cdelt1, t);
     detector.p2 = FIND1(cdelt2, t);
@@ -210,25 +210,25 @@ int Siddon(PyArrayObject * data,
 	  ax1 = INF;
 	  axn = INF;}
 	else{
-	  dx = RoiO.px/u0[0];
-	  ax1 = (RoiO.xmin - orbit.xd)/u0[0];
-	  axn = (RoiO.xmax - orbit.xd)/u0[0];}
+	  dx = RoiO.p[0]/u0[0];
+	  ax1 = (RoiO.min[0] - orbit.M[0])/u0[0];
+	  axn = (RoiO.max[0] - orbit.M[0])/u0[0];}
 	if(u0[1] == 0){
 	  dy = INF;
 	  ay1 = INF;
 	  ayn = INF;}
 	else{
-	  dy = RoiO.py/u0[1];
-	  ay1 = (RoiO.ymin - orbit.yd)/u0[1];
-	  ayn = (RoiO.ymax - orbit.yd)/u0[1];}
+	  dy = RoiO.p[1]/u0[1];
+	  ay1 = (RoiO.min[1] - orbit.M[1])/u0[1];
+	  ayn = (RoiO.max[1] - orbit.M[1])/u0[1];}
 	if(u0[2] == 0){
 	  dz = INF;
 	  az1 = INF;
 	  azn = INF;}
 	else{
-	  dz = RoiO.pz/u0[2];
-	  az1 = (RoiO.zmin - orbit.zd)/u0[2];
-	  azn = (RoiO.zmax - orbit.zd)/u0[2];}
+	  dz = RoiO.p[2]/u0[2];
+	  az1 = (RoiO.min[2] - orbit.M[2])/u0[2];
+	  azn = (RoiO.max[2] - orbit.M[2])/u0[2];}
  
 	Compare(&axmin,&axmax,ax1,axn);
 	Compare(&aymin,&aymax,ay1,ayn);
@@ -240,22 +240,22 @@ int Siddon(PyArrayObject * data,
 	if(amin < amax)
 	{
 	  /* initial and final points in cartesian coordinates */
-	  xe = orbit.xd + amin * u0[0];
-	  ye = orbit.yd + amin * u0[1];
-	  ze = orbit.zd + amin * u0[2];
+	  xe = orbit.M[0] + amin * u0[0];
+	  ye = orbit.M[1] + amin * u0[1];
+	  ze = orbit.M[2] + amin * u0[2];
 	  
 	  iupdate = signe(u0[0]);
 	  jupdate = signe(u0[1]);
 	  kupdate = signe(u0[2]);
 	  
 	  /*  initial intersection*/ 
-	  itemp = (int)( (xe - RoiO.xmin) / RoiO.px);
-	  jtemp = (int)( (ye - RoiO.ymin) / RoiO.py);
-	  ktemp = (int)( (ze - RoiO.zmin) / RoiO.pz);
+	  itemp = (int)( (xe - RoiO.min[0]) / RoiO.p[0]);
+	  jtemp = (int)( (ye - RoiO.min[1]) / RoiO.p[1]);
+	  ktemp = (int)( (ze - RoiO.min[2]) / RoiO.p[2]);
 	  /* initial voxel of each kind */
-	  ie = itemp - (int)( (xe - RoiO.xmin) / RoiO.dx);
-	  je = jtemp - (int)( (ye - RoiO.ymin) / RoiO.dy);
-	  ke = ktemp - (int)( (ze - RoiO.zmin) / RoiO.dz);
+	  ie = itemp - (int)( (xe - RoiO.min[0]) / RoiO.d[0]);
+	  je = jtemp - (int)( (ye - RoiO.min[1]) / RoiO.d[1]);
+	  ke = ktemp - (int)( (ze - RoiO.min[2]) / RoiO.d[2]);
 	  
 	  /* next intersection of each kind */
 	  if(iupdate == 1)
@@ -263,19 +263,19 @@ int Siddon(PyArrayObject * data,
 	  else if(iupdate == -1)
 	    inext = ie;
 	  else
-	    inext = INF*RoiO.nx;
+	    inext = INF*RoiO.n[0];
 	  if(jupdate == 1)
 	    jnext = je + 1;
 	  else if(jupdate == -1)
 	    jnext = je;
 	  else
-	    jnext = INF*RoiO.ny;
+	    jnext = INF*RoiO.n[1];
 	  if(kupdate == 1)
 	    knext = ke + 1;
 	  else if(kupdate == -1)
 	    knext = ke;
 	  else
-	    knext = INF*RoiO.nz;
+	    knext = INF*RoiO.n[2];
 	  
 	  Dx = inext * dx + ax1 - amin;
 	  Dy = jnext * dy + ay1 - amin;
@@ -288,7 +288,7 @@ int Siddon(PyArrayObject * data,
 	  jv = je;
 	  kv = ke;
 
-	  while( (iv >= 0) && (iv <RoiO.nx) && (jv >= 0) && (jv < RoiO.ny ) && (kv >= 0 ) && (kv < RoiO.nz) && (d > 1 ))
+	  while( (iv >= 0) && (iv <RoiO.n[0]) && (jv >= 0) && (jv < RoiO.n[1] ) && (kv >= 0 ) && (kv < RoiO.n[2]) && (d > 1 ))
 	  {
 	    /* discriminate intersection with x,y and z = cte plan */
 	    if((Dx<=Dy)&&(Dx<=Dz))
@@ -439,6 +439,6 @@ int apply_rotation(double R[3][3], double u2[3], double u0[3])
 double distance_to_center(orbit orbit, double u0[3], double ac)
 {
   double d;
-  d = SQ(orbit.xd + ac * u0[0]) + SQ(orbit.yd + ac * u0[1]) + SQ(orbit.zd + ac * u0[2]);
+  d = SQ(orbit.M[0] + ac * u0[0]) + SQ(orbit.M[1] + ac * u0[1]) + SQ(orbit.M[2] + ac * u0[2]);
   return d;
 }
