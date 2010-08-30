@@ -12,7 +12,7 @@ solar_radius = 695000 # in km
 arcsecond_to_radian = np.pi/648000 #pi/(60*60*180)
 
 # data handling
-def read_data(path, dtype=np.float32, bin_factor=None, **kargs):
+def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
     """
     Read SOHO / STEREO data files and output a Data instance
 

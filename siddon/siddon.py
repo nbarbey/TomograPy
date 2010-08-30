@@ -12,25 +12,11 @@ from _C_siddon import siddon as C_siddon
 
 # projector
 def projector(data, cube):
-    data[:] = data.astype('float32')
-    cube[:] = cube.astype('float32')
-    for k in data.header:
-        if data.header[k].dtype == np.dtype('float64'):
-            data.header[k] = data.header[k].astype('float32')
-    for k in cube.header:
-        cube.header[k] = np.float32(cube.header[k])
     cube.header = dict(cube.header)
     C_siddon(data, cube, 0)
     return data
 
 def backprojector(data, cube):
-    data[:] = data.astype('float32')
-    cube[:] = cube.astype('float32')
-    for k in data.header:
-        if data.header[k].dtype == np.dtype('float64'):
-            data.header[k] = data.header[k].astype('float32')
-    for k in cube.header:
-        cube.header[k] = np.float32(cube.header[k])
     cube.header = dict(cube.header)
     C_siddon(data, cube, 1)
     return cube
@@ -43,35 +29,21 @@ def siddon_lo(data_header, cube_header):
     def matvec(x):
         y = dataarray_from_header(data_header)
         y[:] = 0
-        projector(y, x.astype(np.float32))
+        projector(y, x)
         return y
     def rmatvec(x):
         y = fa.fitsarray_from_header(cube_header)
         y[:] = 0
-        backprojector(x.astype(np.float32), y)
+        backprojector(x, y)
         return y
     return lo.ndsubclass(cube, data, matvec=matvec, rmatvec=rmatvec)
 
 def projector_sun(data, cube):
-    data[:] = data.astype('float32')
-    cube[:] = cube.astype('float32')
-    for k in data.header:
-        if data.header[k].dtype == np.dtype('float64'):
-            data.header[k] = data.header[k].astype('float32')
-    for k in cube.header:
-        cube.header[k] = np.float32(cube.header[k])
     cube.header = dict(cube.header)
     C_siddon_sun(data, cube, 0)
     return data
 
 def backprojector_sun(data, cube):
-    data[:] = data.astype('float32')
-    cube[:] = cube.astype('float32')
-    for k in data.header:
-        if data.header[k].dtype == np.dtype('float64'):
-            data.header[k] = data.header[k].astype('float32')
-    for k in cube.header:
-        cube.header[k] = np.float32(cube.header[k])
     cube.header = dict(cube.header)
     C_siddon_sun(data, cube, 1)
     return cube
@@ -84,12 +56,12 @@ def siddon_sun_lo(data_header, cube_header):
     def matvec(x):
         y = dataarray_from_header(data_header)
         y[:] = 0
-        projector_sun(y, x.astype(np.float32))
+        projector_sun(y, x)
         return y
     def rmatvec(x):
         y = fa.fitsarray_from_header(cube_header)
         y[:] = 0
-        backprojector_sun(x.astype(np.float32), y)
+        backprojector_sun(x, y)
         return y
     return lo.ndsubclass(cube, data, matvec=matvec, rmatvec=rmatvec)
 

@@ -46,9 +46,9 @@ static PyObject *call_siddon_sun(PyObject *self, PyObject *args)
   PyArrayObject *lon, *lat, *rol, *d, *xd, *yd, *zd;
   PyArrayObject *cdelt1, *cdelt2, *crpix1, *crpix2;
   PyObject *ocdelt1, *ocdelt2, *ocdelt3;
-  float cube_cdelt1, cube_cdelt2, cube_cdelt3;
+  double cube_cdelt1, cube_cdelt2, cube_cdelt3;
   PyObject *ocrpix1, *ocrpix2, *ocrpix3;
-  float cube_crpix1, cube_crpix2, cube_crpix3;
+  double cube_crpix1, cube_crpix2, cube_crpix3;
   /*test*/
 
   /*integers : dimension of the input and output array */
@@ -92,18 +92,18 @@ static PyObject *call_siddon_sun(PyObject *self, PyObject *args)
   ocdelt1 = (PyObject*)PyDict_GetItemString(cube_header, "CDELT1");
   ocdelt2 = (PyObject*)PyDict_GetItemString(cube_header, "CDELT2");
   ocdelt3 = (PyObject*)PyDict_GetItemString(cube_header, "CDELT3");
-  RoiO.p[0] = (float)PyFloat_AsDouble(ocdelt1);
-  RoiO.p[1] = (float)PyFloat_AsDouble(ocdelt2);
-  RoiO.p[2] = (float)PyFloat_AsDouble(ocdelt3);
+  RoiO.p[0] = (double)PyFloat_AsDouble(ocdelt1);
+  RoiO.p[1] = (double)PyFloat_AsDouble(ocdelt2);
+  RoiO.p[2] = (double)PyFloat_AsDouble(ocdelt3);
   RoiO.d[0] = RoiO.p[0] * nx;
   RoiO.d[1] = RoiO.p[1] * ny;
   RoiO.d[2] = RoiO.p[2] * nz;
   ocrpix1 = (PyObject*)PyDict_GetItemString(cube_header, "CRPIX1");
   ocrpix2 = (PyObject*)PyDict_GetItemString(cube_header, "CRPIX2");
   ocrpix3 = (PyObject*)PyDict_GetItemString(cube_header, "CRPIX3");
-  cube_crpix1 = (float)PyFloat_AsDouble(ocrpix1);
-  cube_crpix2 = (float)PyFloat_AsDouble(ocrpix2);
-  cube_crpix3 = (float)PyFloat_AsDouble(ocrpix3);
+  cube_crpix1 = (double)PyFloat_AsDouble(ocrpix1);
+  cube_crpix2 = (double)PyFloat_AsDouble(ocrpix2);
+  cube_crpix3 = (double)PyFloat_AsDouble(ocrpix3);
   RoiO.min[0] = - cube_crpix1 * RoiO.p[0];
   RoiO.min[1] = - cube_crpix2 * RoiO.p[1];
   RoiO.min[2] = - cube_crpix3 * RoiO.p[2];
@@ -117,18 +117,18 @@ static PyObject *call_siddon_sun(PyObject *self, PyObject *args)
   #pragma omp for
   for(t = 0 ; t < nt ; t++){
     /* define orbit of current image */
-    orbit.lon = FIND1(lon, t);
-    orbit.lat = FIND1(lat, t);
-    orbit.rol = FIND1(rol, t);
-    orbit.d = FIND1(d, t);
-    orbit.M[0] = FIND1(xd, t);
-    orbit.M[1] = FIND1(yd, t);
-    orbit.M[2] = FIND1(zd, t);
+    orbit.lon = DIND1(lon, t);
+    orbit.lat = DIND1(lat, t);
+    orbit.rol = DIND1(rol, t);
+    orbit.d = DIND1(d, t);
+    orbit.M[0] = DIND1(xd, t);
+    orbit.M[1] = DIND1(yd, t);
+    orbit.M[2] = DIND1(zd, t);
     /* define the detector of current image */
-    detector.p1 = FIND1(cdelt1, t);
-    detector.p2 = FIND1(cdelt2, t);
-    detector.s1 = FIND1(crpix1, t);
-    detector.s2 = FIND1(crpix2, t);
+    detector.p1 = DIND1(cdelt1, t);
+    detector.p2 = DIND1(cdelt2, t);
+    detector.s1 = DIND1(crpix1, t);
+    detector.s2 = DIND1(crpix2, t);
     detector.n1 = n1;
     detector.n2 = n2;
     /* Siddon for each time index */
@@ -150,9 +150,9 @@ static PyObject *call_siddon(PyObject *self, PyObject *args)
   PyArrayObject *lon, *lat, *rol, *d, *xd, *yd, *zd;
   PyArrayObject *cdelt1, *cdelt2, *crpix1, *crpix2;
   PyObject *ocdelt1, *ocdelt2, *ocdelt3;
-  float cube_cdelt1, cube_cdelt2, cube_cdelt3;
+  double cube_cdelt1, cube_cdelt2, cube_cdelt3;
   PyObject *ocrpix1, *ocrpix2, *ocrpix3;
-  float cube_crpix1, cube_crpix2, cube_crpix3;
+  double cube_crpix1, cube_crpix2, cube_crpix3;
   /*test*/
 
   /*integers : dimension of the input and output array */
@@ -196,18 +196,18 @@ static PyObject *call_siddon(PyObject *self, PyObject *args)
   ocdelt1 = (PyObject*)PyDict_GetItemString(cube_header, "CDELT1");
   ocdelt2 = (PyObject*)PyDict_GetItemString(cube_header, "CDELT2");
   ocdelt3 = (PyObject*)PyDict_GetItemString(cube_header, "CDELT3");
-  RoiO.p[0] = (float)PyFloat_AsDouble(ocdelt1);
-  RoiO.p[1] = (float)PyFloat_AsDouble(ocdelt2);
-  RoiO.p[2] = (float)PyFloat_AsDouble(ocdelt3);
+  RoiO.p[0] = (double)PyFloat_AsDouble(ocdelt1);
+  RoiO.p[1] = (double)PyFloat_AsDouble(ocdelt2);
+  RoiO.p[2] = (double)PyFloat_AsDouble(ocdelt3);
   RoiO.d[0] = RoiO.p[0] * nx;
   RoiO.d[1] = RoiO.p[1] * ny;
   RoiO.d[2] = RoiO.p[2] * nz;
   ocrpix1 = (PyObject*)PyDict_GetItemString(cube_header, "CRPIX1");
   ocrpix2 = (PyObject*)PyDict_GetItemString(cube_header, "CRPIX2");
   ocrpix3 = (PyObject*)PyDict_GetItemString(cube_header, "CRPIX3");
-  cube_crpix1 = (float)PyFloat_AsDouble(ocrpix1);
-  cube_crpix2 = (float)PyFloat_AsDouble(ocrpix2);
-  cube_crpix3 = (float)PyFloat_AsDouble(ocrpix3);
+  cube_crpix1 = (double)PyFloat_AsDouble(ocrpix1);
+  cube_crpix2 = (double)PyFloat_AsDouble(ocrpix2);
+  cube_crpix3 = (double)PyFloat_AsDouble(ocrpix3);
   RoiO.min[0] = - cube_crpix1 * RoiO.p[0];
   RoiO.min[1] = - cube_crpix2 * RoiO.p[1];
   RoiO.min[2] = - cube_crpix3 * RoiO.p[2];
@@ -221,18 +221,18 @@ static PyObject *call_siddon(PyObject *self, PyObject *args)
   #pragma omp for
   for(t = 0 ; t < nt ; t++){
     /* define orbit of current image */
-    orbit.lon = FIND1(lon, t);
-    orbit.lat = FIND1(lat, t);
-    orbit.rol = FIND1(rol, t);
-    orbit.d = FIND1(d, t);
-    orbit.M[0] = FIND1(xd, t);
-    orbit.M[1] = FIND1(yd, t);
-    orbit.M[2] = FIND1(zd, t);
+    orbit.lon = DIND1(lon, t);
+    orbit.lat = DIND1(lat, t);
+    orbit.rol = DIND1(rol, t);
+    orbit.d = DIND1(d, t);
+    orbit.M[0] = DIND1(xd, t);
+    orbit.M[1] = DIND1(yd, t);
+    orbit.M[2] = DIND1(zd, t);
     /* define the detector of current image */
-    detector.p1 = FIND1(cdelt1, t);
-    detector.p2 = FIND1(cdelt2, t);
-    detector.s1 = FIND1(crpix1, t);
-    detector.s2 = FIND1(crpix2, t);
+    detector.p1 = DIND1(cdelt1, t);
+    detector.p2 = DIND1(cdelt2, t);
+    detector.s1 = DIND1(crpix1, t);
+    detector.s2 = DIND1(crpix2, t);
     detector.n1 = n1;
     detector.n2 = n2;
     /* Siddon for each time index */
@@ -296,7 +296,7 @@ int SiddonSun(PyArrayObject * data,
     for(j = 0 ; j < detector.n2 ; j++)
     {
       /* skip computation if the value is a NaN */
-      if( (!BPJ) || (isNaN(FIND3(data, i, j, t)) == 0 ) )
+      if( (!BPJ) || (isNaN(DIND3(data, i, j, t)) == 0 ) )
       {
 	lambda = (j - detector.s2) * detector.p2; /*eq (9) */
 	define_unit_vector(lambda, gamma, u2);
@@ -358,9 +358,9 @@ int SiddonSun(PyArrayObject * data,
 	      d = distance_to_center(orbit, u0, ac);
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		FIND3(data, i, j, t) += D[0] * FIND3(cube, iv[0], iv[1], iv[2]);
+		DIND3(data, i, j, t) += D[0] * DIND3(cube, iv[0], iv[1], iv[2]);
 	      else
-		FIND3(cube, iv[0], iv[1], iv[2]) += D[0] * FIND3(data, i, j, t);
+		DIND3(cube, iv[0], iv[1], iv[2]) += D[0] * DIND3(data, i, j, t);
 	      /* update voxel subscript */
 	      iv[0] += update[0];
 	      /* update distances to next intersections*/
@@ -374,9 +374,9 @@ int SiddonSun(PyArrayObject * data,
 	      d = distance_to_center(orbit, u0, ac);
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		FIND3(data, i, j, t) += D[1] * FIND3(cube, iv[0], iv[1], iv[2]);
+		DIND3(data, i, j, t) += D[1] * DIND3(cube, iv[0], iv[1], iv[2]);
 	      else
-		FIND3(cube, iv[0], iv[1], iv[2]) += D[1] * FIND3(data, i, j, t);
+		DIND3(cube, iv[0], iv[1], iv[2]) += D[1] * DIND3(data, i, j, t);
 	      /* update voxel subscript */
 	      iv[1] += update[1];
 	      /* update distances to next intersections*/
@@ -390,9 +390,9 @@ int SiddonSun(PyArrayObject * data,
 	      d = distance_to_center(orbit, u0, ac);
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		FIND3(data, i, j, t) += D[2] * FIND3(cube, iv[0], iv[1], iv[2]);
+		DIND3(data, i, j, t) += D[2] * DIND3(cube, iv[0], iv[1], iv[2]);
 	      else
-		FIND3(cube, iv[0], iv[1], iv[2]) += D[2] * FIND3(data, i, j, t);
+		DIND3(cube, iv[0], iv[1], iv[2]) += D[2] * DIND3(data, i, j, t);
 	      /* update voxel subscript */
 	      iv[2] += update[2];
 	      /* update distances to next intersections*/
@@ -463,7 +463,7 @@ int Siddon(PyArrayObject * data,
     for(j = 0 ; j < detector.n2 ; j++)
     {
       /* skip computation if the value is a NaN */
-      if( (!BPJ) || (isNaN(FIND3(data, i, j, t)) == 0 ) )
+      if( (!BPJ) || (isNaN(DIND3(data, i, j, t)) == 0 ) )
       {
 	lambda = (j - detector.s2) * detector.p2; /*eq (9) */
 	define_unit_vector(lambda, gamma, u2);
@@ -524,9 +524,9 @@ int Siddon(PyArrayObject * data,
 	      ac += D[0];
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		FIND3(data, i, j, t) += D[0] * FIND3(cube, iv[0], iv[1], iv[2]);
+		DIND3(data, i, j, t) += D[0] * DIND3(cube, iv[0], iv[1], iv[2]);
 	      else
-		FIND3(cube, iv[0], iv[1], iv[2]) += D[0] * FIND3(data, i, j, t);
+		DIND3(cube, iv[0], iv[1], iv[2]) += D[0] * DIND3(data, i, j, t);
 	      /* update voxel subscript */
 	      iv[0] += update[0];
 	      /* update distances to next intersections*/
@@ -539,9 +539,9 @@ int Siddon(PyArrayObject * data,
 	      ac += D[1];
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		FIND3(data, i, j, t) += D[1] * FIND3(cube, iv[0], iv[1], iv[2]);
+		DIND3(data, i, j, t) += D[1] * DIND3(cube, iv[0], iv[1], iv[2]);
 	      else
-		FIND3(cube, iv[0], iv[1], iv[2]) += D[1] * FIND3(data, i, j, t);
+		DIND3(cube, iv[0], iv[1], iv[2]) += D[1] * DIND3(data, i, j, t);
 	      /* update voxel subscript */
 	      iv[1] += update[1];
 	      /* update distances to next intersections*/
@@ -554,9 +554,9 @@ int Siddon(PyArrayObject * data,
 	      ac += D[2];
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		FIND3(data, i, j, t) += D[2] * FIND3(cube, iv[0], iv[1], iv[2]);
+		DIND3(data, i, j, t) += D[2] * DIND3(cube, iv[0], iv[1], iv[2]);
 	      else
-		FIND3(cube, iv[0], iv[1], iv[2]) += D[2] * FIND3(data, i, j, t);
+		DIND3(cube, iv[0], iv[1], iv[2]) += D[2] * DIND3(data, i, j, t);
 	      /* update voxel subscript */
 	      iv[2] += update[2];
 	      /* update distances to next intersections*/
