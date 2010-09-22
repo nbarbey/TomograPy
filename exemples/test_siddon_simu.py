@@ -6,7 +6,7 @@ import siddon
 # data 
 image_header = {'n_images':16,
                 'SIMPLE':True, 'BITPIX':-64,
-                'NAXIS1':256, 'NAXIS2':256, 
+                'NAXIS1':256, 'NAXIS2':256,
                 'CRPIX1':128, 'CRPIX2':128,
                 'CDELT1':6e-5, 'CDELT2':6e-5,
                 'CRVAL1':0., 'CRVAL2':0.,
