@@ -125,6 +125,15 @@ def circular_trajectory_data(**kargs):
         data.header[k] = data.header[k].astype(np.int32)
     return data
 
+def object_from_header(header, **kargs):
+    """
+    Generate an object from a given header
+    """
+    shape =  header['NAXIS1'], header['NAXIS2'], header['NAXIS3']
+    dtype = header.pop('dtype', np.float64)
+    obj = Object(shape, header=header, dtype=dtype, **kargs)
+    return obj
+
 def spherical_object(**kargs):
     """
     Generate an object containing ones inside a sphere and zeros outside
@@ -148,9 +157,7 @@ def spherical_object(**kargs):
 
     """
     radius = kargs.pop('radius', 1.)
-    shape =  kargs['NAXIS1'], kargs['NAXIS2'], kargs['NAXIS3']
-    dtype = kargs.pop('dtype', np.float64)
-    obj = Object(shape, header=kargs, dtype=dtype)
+    obj = object_from_header(header)
     obj[:] = np.zeros(shape)
     x, y, z, = obj.axes()
     X, Y = np.meshgrid(x, y)
