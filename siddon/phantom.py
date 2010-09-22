@@ -3,36 +3,6 @@ Generate Shepp-Logan phantoms.
 """
 import numpy as np
 
-# define ellipsoid parameters
-#default_dict = dict('A': , 'a':, 'b': , 'c':,
-#                    'x0':, 'y0': , 'z0':,
-#                    'phi': , 'theta': , 'psi': ),
-
-parameters_tuple = ['A', 'a', 'b', 'c', 'x0', 'y0', 'z0', 'phi', 'theta', 'psi']
-
-modified_shepp_logan_array = [
-    [  1,  .6900,  .920,  .810,    0.,       0.,      0.,     0.,     0.,      0.],
-    [-.8,  .6624,  .874,  .780,    0.,   -.0184,      0.,     0.,     0.,      0.],
-    [-.2,  .1100,  .310,  .220,    .22,      0.,      0.,    -18,     0.,     10,],
-    [-.2,  .1600,  .410,  .280,   -.22,      0.,      0.,     18,     0.,     10,],
-    [ .1,  .2100,  .250,  .410,     0.,     .35,    -.15,     0.,     0.,     0.,],
-    [ .1,  .0460,  .046,  .050,     0.,      .1,     .25,     0.,     0.,     0.,],
-    [ .1,  .0460,  .046,  .050,     0.,     -.1,     .25,     0.,     0.,     0.,],
-    [ .1,  .0460,  .023,  .050,   -.08,   -.605,      0.,     0.,     0.,     0.,],
-    [ .1,  .0230,  .023,  .020,     0.,   -.606,      0.,     0.,     0.,     0.,],
-    [ .1,  .0230,  .046,  .020,    .06,   -.605,      0.,     0.,     0.,     0.,]]
-
-def _array_to_parameters(array):
-    array = np.asarray(array).T
-    out = []
-    for j in xrange(array.shape[1]):
-        tmp = dict()
-        for k, i in zip(parameters_tuple, xrange(array.shape[0])):
-            tmp[k] = array[i, j]
-        out.append(tmp)
-    return out
-
-modified_shepp_logan_parameters = _array_to_parameters(modified_shepp_logan_array)
 
 def phantom(shape, parameters_list, dtype=np.float64):
     """
@@ -135,3 +105,62 @@ def scale(coordinates, p):
         yo.append(yi / p['b'])
         zo.append(zi / p['c'])
     return xo, yo, zo
+
+# specific phantom parameters
+
+parameters_tuple = ['A', 'a', 'b', 'c', 'x0', 'y0', 'z0', 'phi', 'theta', 'psi']
+
+# arrays
+modified_shepp_logan_array = [
+    [  1,  .6900,  .920,  .810,    0.,       0.,      0.,     0.,     0.,      0.],
+    [-.8,  .6624,  .874,  .780,    0.,   -.0184,      0.,     0.,     0.,      0.],
+    [-.2,  .1100,  .310,  .220,    .22,      0.,      0.,    -18,     0.,     10,],
+    [-.2,  .1600,  .410,  .280,   -.22,      0.,      0.,     18,     0.,     10,],
+    [ .1,  .2100,  .250,  .410,     0.,     .35,    -.15,     0.,     0.,     0.,],
+    [ .1,  .0460,  .046,  .050,     0.,      .1,     .25,     0.,     0.,     0.,],
+    [ .1,  .0460,  .046,  .050,     0.,     -.1,     .25,     0.,     0.,     0.,],
+    [ .1,  .0460,  .023,  .050,   -.08,   -.605,      0.,     0.,     0.,     0.,],
+    [ .1,  .0230,  .023,  .020,     0.,   -.606,      0.,     0.,     0.,     0.,],
+    [ .1,  .0230,  .046,  .020,    .06,   -.605,      0.,     0.,     0.,     0.,]]
+
+shepp_logan_array = np.copy(modified_shepp_logan_array)
+shepp_logan_array[0] = [1, -.98, -.02, -.02, .01, .01, .01, .01, .01, .01]
+
+yu_ye_wang_array = [
+       [  1,  .6900,  .920,  .900,     0,      0,      0,     0,     0,     0],
+       [-.8,  .6624,  .874,  .880,     0,      0,      0,     0,     0,     0],
+       [-.2,  .4100,  .160,  .210,  -.22,      0,   -.25,   108,     0,     0],
+       [-.2,  .3100,  .110,  .220,   .22,      0,   -.25,    72,     0,     0],
+       [ .2,  .2100,  .250,  .500,     0,    .35,   -.25,     0,     0,     0],
+       [ .2,  .0460,  .046,  .046,     0,     .1,   -.25,     0,     0,     0],
+       [ .1,  .0460,  .023,  .020,  -.08,   -.65,   -.25,     0,     0,     0],
+       [ .1,  .0460,  .023,  .020,   .06,   -.65,   -.25,    90,     0,     0],
+       [ .2,  .0560,  .040,  .100,   .06,  -.105,   .625,    90,     0,     0],
+       [-.2,  .0560,  .056,  .100,     0,   .100,   .625,     0,     0,     0],
+       ]
+       
+
+# to convert to list of dicts
+def _array_to_parameters(array):
+    array = np.asarray(array)
+    out = []
+    for i in xrange(array.shape[0]):
+        tmp = dict()
+        for k, j in zip(parameters_tuple, xrange(array.shape[1])):
+            tmp[k] = array[i, j]
+        out.append(tmp)
+    return out
+
+modified_shepp_logan_parameters = _array_to_parameters(modified_shepp_logan_array)
+shepp_logan_parameters = _array_to_parameters(shepp_logan_array)
+yu_ye_wang_parameters = _array_to_parameters(yu_ye_wang_array)
+
+# define specific functions
+def modified_shepp_logan(shape, **kargs):
+    return phantom(shape, modified_shepp_logan_parameters, **kargs)
+
+def shepp_logan(shape, **kargs):
+    return phantom(shape, shepp_logan_parameters, **kargs)
+
+def yu_ye_wang(shape, **kargs):
+    return phantom(shape, yu_ye_wang_parameters, **kargs)
