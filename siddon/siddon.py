@@ -79,5 +79,7 @@ def update_header(array):
     instrume = array.header.get('INSTRUME')
     if instrume is None:
         raise ValueError('array header does not have an INSTRUME keyword')
-    if array.header['INSTRUME'] == 'SECCHI':
+    if instrume == 'SECCHI':
         siddon.secchi.update_header(array)
+    else:
+        raise ValueError('Instrument ' + instrume + ' not yet handled')
