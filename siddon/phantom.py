@@ -34,11 +34,7 @@ def ellipsoid(parameters, shape=None, out=None, coordinates=None):
     if coordinates is None:
         coordinates = define_coordinates(shape)
     # rotate coordinates
-    coordr = rotate(coordinates, parameters)
-    # center coordinates
-    coordc = center(coordr, parameters)
-    # scale coordinates
-    coords = scale(coordc, parameters)
+    coords = transform(coordinates, parameters)
     # recast as ndarray
     coords = [np.asarray(u) for u in coords]
     # reshape coordinates
@@ -77,33 +73,21 @@ def define_coordinates(shape):
     x, y, z = mgrid[-1:1:cshape[0], -1:1:cshape[1], -1:1:cshape[1]]
     return x, y, z
 
-def rotate(coordinates, parameters):
-    alpha = rotation_matrix(parameters)
+def transform(coordinates, p):
+    alpha = rotation_matrix(p)
     x, y, z = coordinates
     xo, yo, zo = [], [], []
     for xi, yi, zi in zip(x.flat, y.flat, z.flat):
         xt, yt, zt = np.dot(alpha, np.asarray([xi, yi, zi]))
+        xt -= p['x0']
+        yt -= p['y0']
+        zt -= p['z0']
+        xt /= p['a']
+        yt /= p['b']
+        zt /= p['c']
         xo.append(xt)
         yo.append(yt)
         zo.append(zt)
-    return xo, yo, zo
-
-def center(coordinates, p):
-    x, y, z = coordinates
-    xo, yo, zo = [], [], []
-    for xi, yi, zi in zip(x, y, z):
-        xo.append(xi - p['x0'])
-        yo.append(yi - p['y0'])
-        zo.append(zi - p['z0'])
-    return xo, yo, zo
-
-def scale(coordinates, p):
-    x, y, z = coordinates
-    xo, yo, zo = [], [], []
-    for xi, yi, zi in zip(x, y, z):
-        xo.append(xi / p['a'])
-        yo.append(yi / p['b'])
-        zo.append(zi / p['c'])
     return xo, yo, zo
 
 # specific phantom parameters
