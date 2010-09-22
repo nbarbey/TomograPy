@@ -75,10 +75,40 @@ class Object(fa.FitsArray):
 def circular_trajectory_data(**kargs):
     """
     Generate a circular trajectory of n images at a given radius
+
+    Inputs
+    ------
+    radius : float
+        radius of the trajectory
+    dtype : data-type, optional (default np.float64)
+        data type of the output array
+    n_images : int (default 1)
+        number of images
+    min_lon : float (default 0.)
+        first longitude value in radians
+    max_lon : float (default 2 * np.pi)
+        last longitude value in radians
+    kargs :
+        other keyword arguments are treated as keywords of
+        the image header.
+
+    Outputs
+    -------
+
+    data : InfoArray
+        An empty InfoArray filled with appropriate metadata. The last axis
+        is image index. The header elements are 1d arrays of length
+        n_images.
+
+    Exemple
+    -------
+    >>> data = circular_trajectory_data(**default_image_dict)
+    >>> data.shape
+    (1, 1, 1)
     """
     radius = kargs.pop('radius', 1.)
     dtype = kargs.pop('dtype', np.float64)
-    n_images = kargs.pop('n_images', 64)
+    n_images = kargs.pop('n_images', 1)
     min_lon = kargs.pop('min_lon', 0.)
     max_lon = kargs.pop('max_lon', 2 * np.pi)
     longitudes = np.linspace(min_lon, max_lon, n_images)
@@ -97,7 +127,25 @@ def circular_trajectory_data(**kargs):
 
 def spherical_object(**kargs):
     """
-    Generate an object containing ones inside a sphere and zero outside
+    Generate an object containing ones inside a sphere and zeros outside
+
+    Inputs
+    ------
+    radius: float
+        The radius of the sphere.
+    NAXIS1: int
+        The number of pixels along the first axis.
+    NAXIS2: int
+        The number of pixels along the second axis.
+    NAXIS3: int
+        The number of pixels along the third axis.
+    dtype: data-type, optional (default: np.float64)
+
+    Outputs
+    -------
+    obj: InfoArray
+       A 3D infoarray with 1s inside a sphere and 0s outside
+
     """
     radius = kargs.pop('radius', 1.)
     shape =  kargs['NAXIS1'], kargs['NAXIS2'], kargs['NAXIS3']
