@@ -91,6 +91,12 @@ def ellipsoid(parameters, shape=None, out=None, coordinates=None):
         out = np.zeros(shape)
     if shape is None:
         shape = out.shape
+    if len(shape) == 1:
+        shape = shape, shape, shape
+    elif len(shape) == 2:
+        shape = shape[0], shape[1], 1
+    elif len(shape) > 3:
+        raise ValueError("input shape must be lower or equal to 3")
     if coordinates is None:
         coordinates = define_coordinates(shape)
     # rotate coordinates
@@ -137,7 +143,7 @@ def define_coordinates(shape):
     """
     mgrid = np.lib.index_tricks.nd_grid()
     cshape = np.asarray(1j) * shape
-    x, y, z = mgrid[-1:1:cshape[0], -1:1:cshape[1], -1:1:cshape[1]]
+    x, y, z = mgrid[-1:1:cshape[0], -1:1:cshape[1], -1:1:cshape[2]]
     return x, y, z
 
 def transform(coordinates, p):
