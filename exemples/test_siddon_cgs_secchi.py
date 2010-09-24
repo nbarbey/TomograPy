@@ -22,19 +22,18 @@ shape = 3 * (128,)
 header = {'CRPIX1':64., 'CRPIX2':64., 'CRPIX3':64.,
           'CDELT1':0.0234375, 'CDELT2':0.0234375, 'CDELT3':0.0234375,
           'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
-cube = fa.zeros(shape, header=header, dtype=np.float32)
+cube = fa.zeros(shape, header=header)
 # model
 P = siddon.siddon_lo(data.header, cube.header)
-D = [lo.diff(cube.shape, axis=i, dtype=np.float32) for i in xrange(cube.ndim)]
+D = [lo.diff(cube.shape, axis=i) for i in xrange(cube.ndim)]
 hypers = cube.ndim * (1e0, )
-hypers = [lo.mul(d.shape[1], h, dtype=np.float32) for h, d in zip(hypers, D)]
 # inversion
 t = time.time()
 A = P.T * P + np.sum([h * d.T * d for h, d in zip(hypers, D)])
 b = P.T * data.flatten()
-callback = lo.iterative.CallbackFactory(verbose=True)
-x, info = spl.bicgstab(A, b, maxiter=100, callback=callback)
-#x, info = lo.acg(P, D, hypers, data.flatten(), maxiter=100,)
+#callback = lo.iterative.CallbackFactory(verbose=True)
+#x, info = spl.bicgstab(A, b, maxiter=100, callback=callback)
+x, info = lo.acg(P, data.flatten(), D, hypers, maxiter=100,)
 sol = cube.copy()
 sol[:] = x.reshape(cube.shape)
 print(time.time() - t)
