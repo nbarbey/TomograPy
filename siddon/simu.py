@@ -1,5 +1,5 @@
 """
-Regroup functions to easily perform simulations
+Regroup functions to easily perform simulations.
 """
 import numpy as np
 
