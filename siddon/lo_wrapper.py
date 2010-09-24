@@ -2,6 +2,8 @@
 If lo package is present, define siddon lo wrapper
 """
 import lo
+import fitsarray as fa
+from siddon import dataarray_from_header, backprojector, projector
 
 def siddon_lo(data_header, cube_header):
     """
@@ -46,4 +48,3 @@ def siddon_sun_lo(data_header, cube_header):
         backprojector_sun(x, y)
         return y
     return lo.ndsubclass(cube, data, matvec=matvec, rmatvec=rmatvec)
-
