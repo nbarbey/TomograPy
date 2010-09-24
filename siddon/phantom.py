@@ -18,6 +18,14 @@ Ellipsoid parameters are as follows:
 Alternatively, you can generate only one ellipsoid by calling
 the ellipsoid function.
 
+Exemple
+-------
+To generate a phantom cube of size 32 * 32 * 32 :
+
+>>> from siddon.phantom import *
+>>> my_phantom = shepp_logan((32, 32, 32))
+>>> assert my_phantom[16, 16, 16] == -0.8
+
 Notes
 -----
 You can take a look at those links for explanations:
@@ -35,6 +43,7 @@ Nicolas Barbey
 """
 import numpy as np
 
+__all__ = ['phantom', 'shepp_logan', 'modified_shepp_logan', 'yu_ye_wang']
 
 def phantom(shape, parameters_list, dtype=np.float64):
     """
