@@ -8,7 +8,7 @@ import fitsarray as fa
 default_image_dict = {'NAXIS':2, 'NAXIS1':1, 'NAXIS2':1,
                       'BITPIX':-32, 'SIMPLE':True,
                       'CRPIX1':1., 'CRPIX2':1., 'CDELT1':1., 'CDELT2':1.,
-                      'LON':0., 'LAT':np.pi / 2, 'ROL':0.,
+                      'LON':0., 'LAT':0., 'ROL':0.,
                       'D':1., 'XD':1., 'YD':0., 'ZD':0.}
 image_keys = default_image_dict.keys()
 default_image = fa.fitsarray_from_header(default_image_dict)
