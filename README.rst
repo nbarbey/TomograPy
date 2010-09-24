@@ -19,3 +19,8 @@ Exemple
 =======
 
 For an exemple on how to use siddon, see exemple/test_siddon_simu.py
+
+Home page
+=========
+
+http://nbarbey.dyndns.org/software/siddon.html
