@@ -9,7 +9,6 @@ header = {'SIMPLE':True,'BITPIX':-64,
           'CRPIX1':16., 'CRPIX2':16., 'CRPIX3':16.,
           'CDELT1':0.04, 'CDELT2':0.04, 'CDELT3':0.04,
           'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
-header['radius'] = 1.2
 obj = siddon.simu.object_from_header(header)
 obj[:] = siddon.phantom.shepp_logan(obj.shape)
 # data 

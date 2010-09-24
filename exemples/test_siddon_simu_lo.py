@@ -41,7 +41,7 @@ print("projection time : " + str(time.time() - t))
 weights = (P.T * np.ones(y.size)).reshape(obj.shape)
 # priors
 Ds = [lo.diff(obj.shape, axis=i) for i in xrange(3)]
-hypers = 1e0 * np.ones(3)
+hypers = 1e-2 * np.ones(3)
 #Ds, hypers = [], []
 # inversion using scipy.sparse.linalg
 t = time.time()
