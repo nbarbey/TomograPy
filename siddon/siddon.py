@@ -60,44 +60,40 @@ import copy
 import os
 import pyfits
 import fitsarray as fa
-from _C_siddon import siddon_sun as C_siddon_sun
-from _C_siddon import siddon as C_siddon
+from parse_templates import siddon_dict_list, suffix_str, ctypes_inv, obstacles_inv
+for siddon_dict in siddon_dict_list:
+    exec_str = "from _C_siddon"
+    exec_str += suffix_str
+    exec_str += " import siddon as siddon"
+    exec_str += suffix_str
+    exec(exec_str % siddon_dict)
+    del exec_str
 
 # projector
-def projector(data, cube):
+def projector(data, cube, obstacle=None):
     """
     Project a cubic map into a data cube using the Siddon algorithm.
     """
     cube.header = dict(cube.header)
-    C_siddon(data, cube, 0)
+    if data.dtype != cube.dtype:
+        raise ValueError("data and cube map should have the same data-type")
+    my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
+                      "obstacle":obstacles_inv[obstacle]}
+    proj_str = "siddon" + suffix_str + "(data, cube, 0)"
+    exec(proj_str % my_siddon_dict)
     return data
 
-def backprojector(data, cube):
+def backprojector(data, cube, obstacle=None):
     """
     Backproject a data cube into a cubic map using the Siddon algorithm.
     """
     cube.header = dict(cube.header)
-    C_siddon(data, cube, 1)
-    return cube
-
-def projector_sun(data, cube):
-    """
-    Project a cubic map into a data cube using the Siddon algorithm.
-    Rays are blocked at a centered sphere of radius one (as it is the
-    case in solar tomography).
-    """
-    cube.header = dict(cube.header)
-    C_siddon_sun(data, cube, 0)
-    return data
-
-def backprojector_sun(data, cube):
-    """
-    Backproject a data cube into a cubic map using the Siddon algorithm.
-    Rays are blocked at a centered sphere of radius one (as it is the
-    case in solar tomography).
-    """
-    cube.header = dict(cube.header)
-    C_siddon_sun(data, cube, 1)
+    if data.dtype != cube.dtype:
+        raise ValueError("data and cube map should have the same data-type")
+    my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
+                      "obstacle":obstacles_inv[obstacle]}
+    proj_str = "siddon" + suffix_str + "(data, cube, 1)"
+    exec(proj_str % my_siddon_dict)
     return cube
 
 def dataarray_from_header(header):
