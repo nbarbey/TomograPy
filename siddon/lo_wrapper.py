@@ -24,4 +24,4 @@ def siddon_lo(data_header, cube_header, obstacle=None):
         y[:] = 0
         backprojector(x, y, obstacle=obstacle)
         return y
-    return lo.ndsubclass(cube, data, matvec=matvec, rmatvec=rmatvec)
+    return lo.ndsubclass(cube, data, matvec=matvec, rmatvec=rmatvec, dtype=data.dtype)
