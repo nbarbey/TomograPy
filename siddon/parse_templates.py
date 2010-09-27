@@ -4,7 +4,8 @@ import numpy as np
 c_siddon_template = "siddon" + os.sep + "C_siddon.c.template"
 
 #ctypes = ["float", "double"]
-ctypes = {"float":'float32', "double":'float64'}
+ctypes = {"float":"float32", "double":"float64",
+          "int":"int16", "long":"int32"}
 obstacles = {"none":None, "sun":"sun"}
 
 siddon_dict_list = []
