@@ -21,3 +21,12 @@ from siddon import *
 import simu
 import secchi
 import phantom
+
+try:
+    import lo
+except ImportError:
+    pass
+
+if 'lo' in locals():
+    from lo_wrapper import *
+
