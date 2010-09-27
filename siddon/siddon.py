@@ -53,6 +53,10 @@ array forming a cube. The metadata is stored in an InfoArray header.
 Each value of the header dict is a 1d ndarray of length the number of
 images.
 
+The reference pixel of an image and the reference voxel of a map cube
+are used to define the orientation of the images : the reference pixel
+of the image points to the reference voxel of the cube.
+
 """
 import numpy as np
 import time
