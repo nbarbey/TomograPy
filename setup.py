@@ -18,7 +18,7 @@ ext_modules = [Extension(join('siddon', '_C_siddon' + suffix_str % siddon_dict),
                          ) for siddon_dict in siddon_dict_list]
 
 setup(name='Siddon',
-      version='0.2.1',
+      version='0.2.2',
       description='Solar tomography and Siddon algorithm',
       author='Nicolas Barbey',
       author_email='nicolas.barbey@cea.fr',
