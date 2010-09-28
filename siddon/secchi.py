@@ -97,13 +97,13 @@ def filter_files(files, instrume=None, obsrvtry=None, detector=None,
         bad = 0
         # check for origin of data
         if instrume is not None:
-            if instrume != f.header['INSTRUME']:
+            if f.header['INSTRUME'] not in instrume:
                 bad = 1
         if obsrvtry is not None:
-            if obsrvtry != f.header['OBSRVTRY']:
+            if f.header['OBSRVTRY'] not in obsrvtry:
                 bad = 1
         if detector is not None:
-            if detector != f.header['DETECTOR']:
+            if f.header['DETECTOR'] not in detector:
                 bad = 1
         # check for time window
         if time_window is not None:
