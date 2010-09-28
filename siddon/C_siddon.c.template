@@ -271,7 +271,7 @@ int Siddon(PyArrayObject * data,
 	{
 	  if(u0[k] == 0){
 	    p[k] = INF;
-	    a1[k] = INF;
+	    a1[k] = - INF;
 	    an[k] = INF;}
 	  else{
 	    p[k] = RoiO.p[k] / u0[k];
