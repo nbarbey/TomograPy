@@ -6,17 +6,17 @@ import numpy as np
 import fitsarray as fa
 
 default_image_dict = {'NAXIS':2, 'NAXIS1':1, 'NAXIS2':1,
-                      'BITPIX':-32, 'SIMPLE':True,
-                      'CRPIX1':1., 'CRPIX2':1., 'CDELT1':1., 'CDELT2':1.,
+                      'BITPIX':-64, 'SIMPLE':True,
+                      'CRPIX1':0.5, 'CRPIX2':0.5, 'CDELT1':1., 'CDELT2':1.,
                       'LON':0., 'LAT':0., 'ROL':0.,
                       'D':1., 'XD':1., 'YD':0., 'ZD':0.}
 image_keys = default_image_dict.keys()
 default_image = fa.fitsarray_from_header(default_image_dict)
 
 default_object_dict = {'NAXIS':3, 'NAXIS1':1, 'NAXIS2':1, 'NAXIS3':1,
-                       'BITPIX':-32, 'SIMPLE':True,
-                       'CRPIX1':1., 'CRPIX2':1., 'CRPIX3':1.,
-                       'CRVAL1':1., 'CRVAL2':1., 'CRVAL3':1.,
+                       'BITPIX':-64, 'SIMPLE':True,
+                       'CRPIX1':0.5, 'CRPIX2':0.5, 'CRPIX3':0.5,
+                       'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,
                        'CDELT1':1., 'CDELT2':1., 'CDELT3':1., }
 object_keys = default_object_dict.keys()
 default_object = fa.fitsarray_from_header(default_object_dict)
