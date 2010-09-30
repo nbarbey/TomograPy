@@ -35,6 +35,7 @@ def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
         fits_array = fa.hdu2fitsarray(f)
         if bin_factor is not None:
             fits_array = fits_array.bin(bin_factor)
+            fits_array.header['RSUN'] /= bin_factor
         update_header(fits_array)
         fits_arrays.append(fits_array)
     data = fa.infoarrays2infoarray(fits_arrays)
@@ -133,3 +134,95 @@ def time_compare(x, y):
         return 0
     else: # a < b
         return -1
+
+def define_data_mask(data, Rmin=None, Rmax=None, mask_negative=False):
+    """
+    Defines a mask of shape data.shape.
+
+    Inputs
+    ------
+
+    data: A data InfoArray with 'RSUN' and 'CRPIX{1,2}' as metadata.
+      The data set.
+
+    Rmin: float (optional)
+      Data below Rmin is masked. Rmin is defined relatively to RSUN
+
+    Rmin: float (optional)
+      Data above Rmax is masked. Rmin is defined relatively to RSUN
+
+    mask_negative: boolean
+      If True, negative data is masked.
+
+    Output
+    ------
+    data_mask: ndarray of booleans of shapa data.shape
+    """
+    data_mask = np.ones(data.shape, dtype=bool)
+    # if no radius limits no need to compute R
+    if Rmin is not None or Rmax is not None:
+        R = distance_to_sun_center(data)
+        if Rmin is not None:
+            data_mask *= (R < Rmin)
+        if Rmax is None:
+            data_mask *= (R > Rmax)
+    if mask_negative:
+        data_mask *= data < 0.
+    return data_mask
+
+def distance_to_sun_center(data):
+    """
+    Outputs an array containing the distance from the Sun center in
+    the data.
+
+    Inputs
+    ------
+
+    data: A data InfoArray with 'RSUN' and 'CRPIX{1,2}' as metadata.
+      The data set.
+
+    Output
+    ------
+    R: ndarray of shapa data.shape
+      The distance to the Sun center on the images in % of RSUN.
+      RSUN is the radius of the Sun on one image in number of pixels.
+    """
+    R = np.zeros(data.shape)
+    # loop on images
+    for i in xrange(data.shape[-1]):
+        # get axes
+        Rsun = data.header['RSUN'][i]
+        crpix1 = data.header['CRPIX1'][i]
+        crpix2 = data.header['CRPIX2'][i]
+        x = (np.arange(data.shape[0]) - crpix1) / Rsun
+        y = (np.arange(data.shape[0]) - crpix2) / Rsun
+        # generate 2D repeated axes
+        X, Y = np.meshgrid(x, y)
+        # radius computation
+        R[..., i] = np.sqrt(X ** 2 + Y ** 2)
+    return R
+
+def define_map_mask(cube, Rmin=None, Rmax=None):
+    """
+    Output a mask of shape cube.shape.
+    """
+    obj_mask = np.ones(cube.shape, dtype=bool)
+    if Rmin is not None or Rmax is not None:
+        R = map_radius(cube)
+        if Rmin is not None:
+            obj_mask *= (R < Rmin)
+        if Rmax is None:
+            obj_mask *= (R > Rmax)
+    return obj_mask
+
+def map_radius(cube):
+    """
+    Outputs a cube containing the distance to the Sun center in a map
+    cube.
+    """
+    R = np.zeros(cube.shape)
+    x, y, z = cube.axes()
+    X, Y = np.meshgrid(x, y)
+    for i, zt in enumerate(z):
+        R[..., i] = np.sqrt(X ** 2 + Y ** 2 + zt ** 2)
+    return R
