@@ -21,6 +21,7 @@ from siddon import *
 import simu
 import secchi
 import phantom
+import models
 
 try:
     import lo
