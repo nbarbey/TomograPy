@@ -226,3 +226,48 @@ def map_radius(cube):
     for i, zt in enumerate(z):
         R[..., i] = np.sqrt(X ** 2 + Y ** 2 + zt ** 2)
     return R
+
+def slice_data(data, s):
+    """
+    Slices data InfoArray.
+    """
+    sd = 2 * (slice(None, None, None), ) + (s,)
+    out = data[sd]
+    # copy header elements as it is not done usually
+    out.header = data.header.copy()
+    for k in data.header.keys():
+        out.header[k] = data.header[k][s].copy()
+    return out
+
+def concatenate(data_list):
+    out = np.concatenate(data_list, axis=-1)
+    # copy header and key values
+    header = data_list[0].header.copy()
+    for k in header.keys():
+        header[k] = data_list[0].header[k].copy()
+    # concatenate key values
+    for k in header.keys():
+        header[k] = np.concatenate([d.header[k] for d in data_list])
+    out = fa.asinfoarray(out, header)
+    return out
+
+def sort_data_array(data):
+    # sort in time
+    times = [convert_time(t) for t in data.header['DATE_OBS']]
+    ind = np.argsort(times)
+    data_list = []
+    for i in ind:
+        s = slice(i, i + 1)
+        data_list.append(slice_data(data, s))
+    data = concatenate(data_list)
+    return data
+
+def temporal_groups(data, dt_min):
+    """
+    Generates a list of data InfoArray regrouped by time.
+    All images closer in time to dt_min will be in the same array.
+    """
+    times = [convert_time(t) for t in data.header['DATE_OBS']]
+    ind1 = list(np.where(np.diff(times) < dt_min)[0])
+    ind2 = ind1[1:] + [None,]
+    return [slice_data(data, slice(i, j, None)) for i, j in zip(ind1, ind2)]
