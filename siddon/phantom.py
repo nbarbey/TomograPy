@@ -257,6 +257,6 @@ modified_shepp_logan_docstring = common_docstring % {'name': 'Modified Shepp-Log
 shepp_logan_docstring = common_docstring % {'name': 'Shepp-Logan'}
 yu_ye_wang_docstring = common_docstring % {'name': 'Yu Ye Wang'}
 
-np.add_docstring(modified_shepp_logan, modified_shepp_logan_docstring)
-np.add_docstring(shepp_logan, shepp_logan_docstring)
-np.add_docstring(yu_ye_wang, yu_ye_wang_docstring)
+#np.add_docstring(modified_shepp_logan, modified_shepp_logan_docstring)
+#np.add_docstring(shepp_logan, shepp_logan_docstring)
+#np.add_docstring(yu_ye_wang, yu_ye_wang_docstring)
