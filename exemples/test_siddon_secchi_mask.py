@@ -5,7 +5,6 @@ import copy
 import time
 import siddon
 import lo
-from lo.optimization import *
 # data 
 path = os.path.join(os.getenv('HOME'), 'data', '171dec08')
 time_window = ['2008-12-01T00:00:00.000', '2008-12-15T00:00:00.000']
@@ -40,7 +39,7 @@ D = [Di * Mo.T for Di in D]
 # inversion
 t = time.time()
 b = data[data_mask == 0]
-sol = opt(P, b, D, hypers, maxiter=100)
+sol = lo.opt(P, b, D, hypers, maxiter=100)
 fsol = cube.copy()
 fsol[:] = (Mo.T * sol).reshape(fsol.shape)
 print(time.time() - t)
