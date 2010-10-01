@@ -19,7 +19,7 @@ data = siddon.secchi.sort_data_array(data)
 # make sure it is 64 bits data
 data.header['BITPIX'][:] = -64
 # cube
-shape = 3 * (128,)
+shape = 3 * (64,)
 header = {'CRPIX1':64.,
           'CRPIX2':64.,
           'CRPIX3':64.,
@@ -31,12 +31,12 @@ header = {'CRPIX1':64.,
           'CRVAL3':0.,}
 cube = siddon.fa.zeros(shape, header=header)
 # model
-P, D, obj_mask, data_mask = siddon.models.srt(data, cube,
-                                              obj_rmin=1.,
-                                              obj_rmax=1.7,
-                                              data_rmax=1.3,
-                                              mask_negative=True
-                                              )
+P, D, obj_mask, data_mask, cube = siddon.models.stsrt(data, cube,
+                                                      obj_rmin=1.,
+                                                      obj_rmax=1.7,
+                                                      data_rmax=1.3,
+                                                      mask_negative=True
+                                                      )
 # hyperparameters
 hypers = cube.ndim * (1e-1, )
 # inversion
@@ -44,6 +44,6 @@ t = time.time()
 b = data[data_mask == 0]
 sol = lo.opt(P, b, D, hypers, maxiter=100)
 # reshape result
-fsol = siddon.fa.zeros(shape, header=header)
+fsol = siddon.fa.zeros(cube.shape, header=header)
 fsol[obj_mask == 0] = sol.flatten()
 print(time.time() - t)
