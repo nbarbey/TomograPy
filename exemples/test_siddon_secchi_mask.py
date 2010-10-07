@@ -42,7 +42,8 @@ hypers = cube.ndim * (1e-1, )
 # inversion
 t = time.time()
 b = data[data_mask == 0]
-sol = lo.quadratic_optimization(P, b, D, hypers, maxiter=100)
+#sol = lo.quadratic_optimization(P, b, D, hypers, maxiter=100)
+sol = lo.rls(P, b, D, hypers, maxiter=100)
 # reshape result
 fsol = siddon.fa.zeros(shape, header=header)
 fsol[obj_mask == 0] = sol.flatten()

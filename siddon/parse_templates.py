@@ -2,6 +2,9 @@ import os
 import numpy as np
 
 c_siddon_template = "siddon" + os.sep + "C_siddon.c.template"
+c_siddon4d_template = "siddon" + os.sep + "C_siddon4d.c.template"
+templates = (c_siddon_template, c_siddon4d_template)
+
 
 #ctypes = ["float", "double"]
 ctypes = {"float":"float32", "double":"float64",
@@ -18,7 +21,8 @@ for ctype in ctypes:
 
 def generate_sources():
     for replace_dict in siddon_dict_list:
-        parse_template(c_siddon_template, replace_dict)
+        for template in templates:
+            parse_template(template, replace_dict)
 
 def parse_template(filename, values=None):
     f = open(filename, "r")
