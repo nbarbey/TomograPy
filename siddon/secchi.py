@@ -262,12 +262,16 @@ def sort_data_array(data):
     data = concatenate(data_list)
     return data
 
+def temporal_groups_indexes(data, dt_min):
+    times = [convert_time(t) for t in data.header['DATE_OBS']]
+    ind1 = list(np.where(np.diff(times) < dt_min)[0])
+    return ind1
+
 def temporal_groups(data, dt_min):
     """
     Generates a list of data InfoArray regrouped by time.
     All images closer in time to dt_min will be in the same array.
     """
-    times = [convert_time(t) for t in data.header['DATE_OBS']]
-    ind1 = list(np.where(np.diff(times) < dt_min)[0])
+    ind1 = temporal_groups_indexes(data, dt_min)
     ind2 = ind1[1:] + [None,]
     return [slice_data(data, slice(i, j, None)) for i, j in zip(ind1, ind2)]

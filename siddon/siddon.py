@@ -73,6 +73,12 @@ for siddon_dict in siddon_dict_list:
     exec_str += suffix_str
     exec(exec_str % siddon_dict)
     del exec_str
+    exec_str = "from _C_siddon4d"
+    exec_str += suffix_str
+    exec_str += " import siddon as siddon4d"
+    exec_str += suffix_str
+    exec(exec_str % siddon_dict)
+    del exec_str
 
 # projector
 def projector(data, cube, obstacle=None):
@@ -136,6 +142,70 @@ def backprojector(data, cube, obstacle=None):
     my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
                       "obstacle":obstacles_inv[obstacle]}
     proj_str = "siddon" + suffix_str + "(data, cube, 1)"
+    exec(proj_str % my_siddon_dict)
+    return cube
+
+def projector4d(data, cube, obstacle=None):
+    """
+    Project a cubic map into a data cube using the Siddon algorithm.
+    The data cube is updated in-place, so you should make a copy before
+    calling projector.
+
+    Inputs
+    ------
+    data : 3d InfoArray
+      Contains a concatenation of FitsArray images along a 3rd dimension.
+      Each header keyword is a vector due to concatenation too.
+    cube : 4d FitsArray
+      The cubic map of intensity or absorption as a function of time.
+    obstacle : {None, "sun"}
+      Define an optional obstacke. If obstacle="sun", the ray-tracing is
+      stopped when the ray reaches a sphere of radius one (the Sun in solar
+      tomography).
+
+    Output
+    ------
+    data : 3d InfoArray
+       The updated data cube.
+    """
+    cube.header = dict(cube.header)
+    if data.dtype != cube.dtype:
+        raise ValueError("data and cube map should have the same data-type")
+    my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
+                      "obstacle":obstacles_inv[obstacle]}
+    proj_str = "siddon4d" + suffix_str + "(data, cube, 0)"
+    exec(proj_str % my_siddon_dict)
+    return data
+
+def backprojector4d(data, cube, obstacle=None):
+    """
+    Backproject a data cube into a cubic map using the Siddon algorithm.
+    The map cube is updated in-place, so you should make a copy before
+    calling projector.
+
+    Inputs
+    ------
+    data : 3d InfoArray
+      Contains a concatenation of FitsArray images along a 3rd dimension.
+      Each header keyword is a vector due to concatenation too.
+    cube : 4d FitsArray
+      The cubic map of intensity or absorption as a function of time.
+    obstacle : {None, "sun"}
+      Define an optional obstacke. If obstacle="sun", the ray-tracing is
+      stopped when the ray reaches a sphere of radius one (the Sun in solar
+      tomography).
+
+    Output
+    ------
+    cube : 3d InfoArray
+       The updated map cube.
+    """
+    cube.header = dict(cube.header)
+    if data.dtype != cube.dtype:
+        raise ValueError("data and cube map should have the same data-type")
+    my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
+                      "obstacle":obstacles_inv[obstacle]}
+    proj_str = "siddon4d" + suffix_str + "(data, cube, 1)"
     exec(proj_str % my_siddon_dict)
     return cube
 
