@@ -4,6 +4,7 @@ If lo package is present, define siddon lo wrapper
 import lo
 import fitsarray as fa
 from siddon import dataarray_from_header, backprojector, projector
+from siddon import backprojector4d, projector4d
 
 def siddon_lo(data_header, cube_header, obstacle=None):
     """

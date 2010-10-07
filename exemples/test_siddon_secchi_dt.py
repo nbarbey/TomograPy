@@ -31,18 +31,15 @@ header = {'CRPIX1':64.,
           'CRVAL3':0.,}
 cube = siddon.fa.zeros(shape, header=header)
 # model
-P, D, obj_mask, data_mask, cube = siddon.models.stsrt(data, cube,
-                                                      obj_rmin=1.,
-                                                      obj_rmax=1.7,
-                                                      data_rmax=1.3,
-                                                      mask_negative=True
-                                                      )
+kwargs = {'obj_rmin':1., 'obj_rmax':1.7, 'data_rmax':1.3,
+          'mask_negative':True, 'dt_min':100}
+P, D, obj_mask, data_mask, cube = siddon.models.stsrt(data, cube, **kwargs)
 # hyperparameters
 hypers = cube.ndim * (1e-1, )
 # inversion
 t = time.time()
 b = data[data_mask == 0]
-sol = lo.opt(P, b, D, hypers, maxiter=100)
+sol = lo.quadratic_optimization(P, b, D, hypers, maxiter=100)
 # reshape result
 fsol = siddon.fa.zeros(cube.shape, header=header)
 fsol[obj_mask == 0] = sol.flatten()
