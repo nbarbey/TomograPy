@@ -7,7 +7,7 @@ from siddon.secchi import read_data
 # data
 obsrvtry = ('STEREO_A', 'STEREO_B')
 data = siddon.secchi.concatenate(
-    [read_data(os.path.join(os.getenv('HOME'), 'data', '171dec08'), 
+    [read_data(os.path.join(os.getenv('HOME'), 'data', 'siddon', '171dec08'), 
                bin_factor=16,
                obsrvtry=obs,
                time_window=['2008-12-01T00:00:00.000', 
