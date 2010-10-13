@@ -76,9 +76,9 @@ inline CTYPE max3(CTYPE, CTYPE, CTYPE);
 inline int sign(CTYPE);
 inline void compare(CTYPE*, CTYPE*, CTYPE, CTYPE);
 
-inline int rotation_matrix(orbit, CTYPE [3][3]);
-inline int define_unit_vector(CTYPE, CTYPE, CTYPE[3]);
-inline int apply_rotation(CTYPE[3][3] , CTYPE[3], CTYPE[3]);
+inline void rotation_matrix(orbit, CTYPE [3][3]);
+inline void define_unit_vector(CTYPE, CTYPE, CTYPE[3]);
+inline void apply_rotation(CTYPE[3][3] , CTYPE[3], CTYPE[3]);
 inline CTYPE distance_to_center(orbit, CTYPE[3], CTYPE);
 
 int Siddon(
@@ -250,6 +250,7 @@ int Siddon(PyArrayObject * data,
   CTYPE d;
   /**/
   CTYPE RoiOpinv[3], RoiOdinv[3];
+  /*to avoid multiple fabs*/
 
   /*replace divisions by multiplications*/
   for(k = 0; k < 3; k ++)
@@ -439,7 +440,7 @@ void compare(CTYPE * pumin, CTYPE * pumax, CTYPE u1, CTYPE u2)
   }
 }
 
-int rotation_matrix(orbit orbit, CTYPE R[3][3])
+void rotation_matrix(orbit orbit, CTYPE R[3][3])
 {
   /* to define the rotation matrix*/
   CTYPE cosln,sinln,coslt,sinlt,cosrl,sinrl;
@@ -460,26 +461,20 @@ int rotation_matrix(orbit orbit, CTYPE R[3][3])
   R[2][0] = - sinlt;
   R[2][1] =   coslt * sinrl;
   R[2][2] =   coslt * cosrl;
-
-  return 0;
 }
 
-int define_unit_vector(CTYPE lambda, CTYPE gamma, CTYPE u2[3])
+void define_unit_vector(CTYPE lambda, CTYPE gamma, CTYPE u2[3])
 {
   u2[0] = cos(lambda) * cos(gamma);
   u2[1] = cos(lambda) * sin(gamma);
   u2[2] = sin(lambda);
-
-  return 0;
 }
 
-int apply_rotation(CTYPE R[3][3], CTYPE u2[3], CTYPE u0[3])
+void apply_rotation(CTYPE R[3][3], CTYPE u2[3], CTYPE u0[3])
 {
   u0[0] = R[0][0] * u2[0] + R[0][1] * u2[1] + R[0][2] * u2[2];
   u0[1] = R[1][0] * u2[0] + R[1][1] * u2[1] + R[1][2] * u2[2];
   u0[2] = R[2][0] * u2[0] + R[2][1] * u2[1] + R[2][2] * u2[2];
-
-  return 0;
 }
 
 CTYPE distance_to_center(orbit orbit, CTYPE u0[3], CTYPE ac)
