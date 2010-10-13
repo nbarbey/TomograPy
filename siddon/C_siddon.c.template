@@ -67,17 +67,22 @@ typedef struct
 void init_C_siddon_%(obstacle)s_%(ctype)s();
 static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *args);
 
-inline CTYPE sun(orbit, CTYPE[3], CTYPE);
-inline CTYPE none(orbit, CTYPE[3], CTYPE);
+/* function declaration */
+inline void project(PyArrayObject*, int, int, int, PyArrayObject*, int[3], CTYPE);
+inline void backproject(PyArrayObject*, int, int, int, PyArrayObject*, int[3], CTYPE);
+
+inline int in_cube(RoiO, int[3]);
+inline int sun(orbit, CTYPE[3], CTYPE);
+inline int none(orbit, CTYPE[3], CTYPE);
 
 inline CTYPE min3(CTYPE, CTYPE, CTYPE);
 inline CTYPE max3(CTYPE, CTYPE, CTYPE);
 inline int sign(CTYPE);
 inline void compare(CTYPE*, CTYPE*, CTYPE, CTYPE);
 
-inline uint rotation_matrix(orbit, CTYPE [3][3]);
-inline uint define_unit_vector(CTYPE, CTYPE, CTYPE[3]);
-inline uint apply_rotation(CTYPE[3][3] , CTYPE[3], CTYPE[3]);
+inline void rotation_matrix(orbit, CTYPE [3][3]);
+inline void define_unit_vector(CTYPE, CTYPE, CTYPE[3]);
+inline void apply_rotation(CTYPE[3][3] , CTYPE[3], CTYPE[3]);
 inline CTYPE distance_to_center(orbit, CTYPE[3], CTYPE);
 
 uint Siddon(
@@ -221,7 +226,7 @@ uint Siddon(PyArrayObject * data,
   /* normalized direction vector in image referentiel */
   CTYPE u2[3];
   /* in solar referentiel */
-  CTYPE u0[3];
+  CTYPE u0[3], u0inv[3];
   /* rotation matrix from image to solar referentiel */
   CTYPE R[3][3];
   /* distance of the current voxel to the detector   */
@@ -248,7 +253,17 @@ uint Siddon(PyArrayObject * data,
   uint next[3];
   /* distance to Sun center */
   CTYPE d;
-  
+  /**/
+  CTYPE RoiOpinv[3], RoiOdinv[3];
+  /*to avoid multiple fabs*/
+
+  /*replace divisions by multiplications*/
+  for(k = 0; k < 3; k ++)
+  {
+    RoiOpinv[k] = 1 / RoiO.p[k];
+    RoiOdinv[k] = 1 / RoiO.d[k];
+  }
+
   /* the rotation matrix does not change for one image */
   rotation_matrix(orbit, R);
   /* loops on angles (detectors pixels) */
@@ -273,9 +288,10 @@ uint Siddon(PyArrayObject * data,
 	    a1[k] = - INF;
 	    an[k] = INF;}
 	  else{
-	    p[k] = RoiO.p[k] / u0[k];
-	    a1[k] = (RoiO.min[k] - orbit.M[k]) / u0[k];
-	    an[k] = (RoiO.max[k] - orbit.M[k]) / u0[k];}
+	    u0inv[k] = 1 / u0[k];
+	    p[k] = RoiO.p[k] * u0inv[k];
+	    a1[k] = (RoiO.min[k] - orbit.M[k]) * u0inv[k];
+	    an[k] = (RoiO.max[k] - orbit.M[k]) * u0inv[k];}
 
 	  compare(&Imin[k], &Imax[k], a1[k], an[k]);
 	}
@@ -309,7 +325,7 @@ uint Siddon(PyArrayObject * data,
 	  ac = amin;
 	  d = distance_to_center(orbit, u0, ac);
 	  /* check if still into the cube and did not reached the obstacles */
-	  while( (iv[0] >= 0) && (iv[0] < RoiO.n[0]) && (iv[1] >= 0) && (iv[1] < RoiO.n[1] ) && (iv[2] >= 0 ) && (iv[2] < RoiO.n[2]) && %(obstacle)s(orbit, u0, ac))
+	  while(in_cube(RoiO, iv) && %(obstacle)s(orbit, u0, ac))
 	  {
 	    /* check along which dimension is the current intersection */
 	    if((D[0] <= D[1]) && (D[0] <= D[2]))
@@ -317,9 +333,9 @@ uint Siddon(PyArrayObject * data,
 	      ac += D[0];
 	      /* projection / backprojection*/
 	      if(!BPJ)
-		IND3(data, i, j, t) += D[0] * IND3(cube, iv[0], iv[1], iv[2]);
+		project(data, i, j, t, cube, iv, D[0]);
 	      else
-		IND3(cube, iv[0], iv[1], iv[2]) += D[0] * IND3(data, i, j, t);
+		backproject(data, i, j, t, cube, iv, D[0]);
 	      /* update voxel subscript */
 	      iv[0] += update[0];
 	      /* update distances to next intersections*/
@@ -332,9 +348,9 @@ uint Siddon(PyArrayObject * data,
 	      ac += D[1];
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		IND3(data, i, j, t) += D[1] * IND3(cube, iv[0], iv[1], iv[2]);
+		project(data, i, j, t, cube, iv, D[1]);
 	      else
-		IND3(cube, iv[0], iv[1], iv[2]) += D[1] * IND3(data, i, j, t);
+		backproject(data, i, j, t, cube, iv, D[1]);
 	      /* update voxel subscript */
 	      iv[1] += update[1];
 	      /* update distances to next intersections*/
@@ -347,9 +363,9 @@ uint Siddon(PyArrayObject * data,
 	      ac += D[2];
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		IND3(data, i, j, t) += D[2] * IND3(cube, iv[0], iv[1], iv[2]);
+		project(data, i, j, t, cube, iv, D[2]);
 	      else
-		IND3(cube, iv[0], iv[1], iv[2]) += D[2] * IND3(data, i, j, t);
+		backproject(data, i, j, t, cube, iv, D[2]);
 	      /* update voxel subscript */
 	      iv[2] += update[2];
 	      /* update distances to next intersections*/
@@ -365,8 +381,26 @@ uint Siddon(PyArrayObject * data,
   return 0;
 }
 
+/* projection update */
+void project(PyArrayObject * data, int i, int j, int t, PyArrayObject * cube, int iv[3], CTYPE d)
+{
+  IND3(data, i, j, t) += d * IND3(cube, iv[0], iv[1], iv[2]);
+}
+
+/* backprojection update*/
+void backproject(PyArrayObject * data, int i, int j, int t, PyArrayObject * cube, int iv[3], CTYPE d)
+{
+  IND3(cube, iv[0], iv[1], iv[2]) += d * IND3(data, i, j, t);
+}
+
+/* check if still in map cube */
+int in_cube(RoiO RoiO, int iv[3])
+{
+  return iv[0] >= 0 && iv[0] < RoiO.n[0] && iv[1] >= 0 && iv[1] < RoiO.n[1] && iv[2] >= 0 && iv[2] < RoiO.n[2];
+}
+
 /* check if the ray has reached the sphere of radius 1 */
-CTYPE sun(orbit orbit, CTYPE u0[3], CTYPE ac)
+int sun(orbit orbit, CTYPE u0[3], CTYPE ac)
 {
   CTYPE d;
   d = distance_to_center(orbit, u0, ac);
@@ -374,7 +408,7 @@ CTYPE sun(orbit orbit, CTYPE u0[3], CTYPE ac)
 }
 
 /* always true : replace sun if no sun obstacle is desired */
-CTYPE none(orbit orbit, CTYPE u0[3], CTYPE ac)
+int none(orbit orbit, CTYPE u0[3], CTYPE ac)
 {
   return 1;
 }
@@ -423,7 +457,7 @@ void compare(CTYPE * pumin, CTYPE * pumax, CTYPE u1, CTYPE u2)
   }
 }
 
-uint rotation_matrix(orbit orbit, CTYPE R[3][3])
+void rotation_matrix(orbit orbit, CTYPE R[3][3])
 {
   /* to define the rotation matrix*/
   CTYPE cosln,sinln,coslt,sinlt,cosrl,sinrl;
@@ -444,26 +478,20 @@ uint rotation_matrix(orbit orbit, CTYPE R[3][3])
   R[2][0] = - sinlt;
   R[2][1] =   coslt * sinrl;
   R[2][2] =   coslt * cosrl;
-
-  return 0;
 }
 
-uint define_unit_vector(CTYPE lambda, CTYPE gamma, CTYPE u2[3])
+void define_unit_vector(CTYPE lambda, CTYPE gamma, CTYPE u2[3])
 {
   u2[0] = cos(lambda) * cos(gamma);
   u2[1] = cos(lambda) * sin(gamma);
   u2[2] = sin(lambda);
-
-  return 0;
 }
 
-uint apply_rotation(CTYPE R[3][3], CTYPE u2[3], CTYPE u0[3])
+void apply_rotation(CTYPE R[3][3], CTYPE u2[3], CTYPE u0[3])
 {
   u0[0] = R[0][0] * u2[0] + R[0][1] * u2[1] + R[0][2] * u2[2];
   u0[1] = R[1][0] * u2[0] + R[1][1] * u2[1] + R[1][2] * u2[2];
   u0[2] = R[2][0] * u2[0] + R[2][1] * u2[1] + R[2][2] * u2[2];
-
-  return 0;
 }
 
 CTYPE distance_to_center(orbit orbit, CTYPE u0[3], CTYPE ac)
