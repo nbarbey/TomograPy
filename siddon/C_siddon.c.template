@@ -67,6 +67,11 @@ typedef struct
 void init_C_siddon_%(obstacle)s_%(ctype)s();
 static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *args);
 
+/* function declaration */
+typedef void (*projPtr)(PyArrayObject*, int, int, int, PyArrayObject*, int[3], CTYPE);
+inline void project(PyArrayObject*, int, int, int, PyArrayObject*, int[3], CTYPE);
+inline void backproject(PyArrayObject*, int, int, int, PyArrayObject*, int[3], CTYPE);
+
 inline int in_cube(RoiO, int[3]);
 inline int sun(orbit, CTYPE[3], CTYPE);
 inline int none(orbit, CTYPE[3], CTYPE);
@@ -374,6 +379,18 @@ int Siddon(PyArrayObject * data,
     }
   }
   return 0;
+}
+
+/* projection update */
+void project(PyArrayObject * data, int i, int j, int t, PyArrayObject * cube, int iv[3], CTYPE d)
+{
+  IND3(data, i, j, t) += d * IND3(cube, iv[0], iv[1], iv[2]);
+}
+
+/* backprojection update*/
+void backproject(PyArrayObject * data, int i, int j, int t, PyArrayObject * cube, int iv[3], CTYPE d)
+{
+  IND3(cube, iv[0], iv[1], iv[2]) += d * IND3(data, i, j, t);
 }
 
 /* check if still in map cube */
