@@ -162,19 +162,13 @@ def transform(coordinates, p):
     """
     alpha = rotation_matrix(p)
     x, y, z = coordinates
-    xo, yo, zo = [], [], []
-    for xi, yi, zi in zip(x.flat, y.flat, z.flat):
-        xt, yt, zt = np.dot(alpha, np.asarray([xi, yi, zi]))
-        xt -= p['x0']
-        yt -= p['y0']
-        zt -= p['z0']
-        xt /= p['a']
-        yt /= p['b']
-        zt /= p['c']
-        xo.append(xt)
-        yo.append(yt)
-        zo.append(zt)
-    return xo, yo, zo
+    ndim = len(coordinates)
+    out_coords = [sum([alpha[j, i] * coordinates[i] for i in xrange(ndim)])
+                  for j in xrange(ndim)]
+    M0 = [p['x0'], p['y0'], p['z0']]
+    sc = [p['a'], p['b'], p['c']]
+    out_coords = [(u - u0) / su for u, u0, su in zip(out_coords, M0, sc)]
+    return out_coords
 
 # specific phantom parameters
 

@@ -67,18 +67,18 @@ typedef struct
 void init_C_siddon_%(obstacle)s_%(ctype)s();
 static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *args);
 
-CTYPE sun(orbit, CTYPE[3], CTYPE);
-CTYPE none(orbit, CTYPE[3], CTYPE);
+inline CTYPE sun(orbit, CTYPE[3], CTYPE);
+inline CTYPE none(orbit, CTYPE[3], CTYPE);
 
-CTYPE min3(CTYPE, CTYPE, CTYPE);
-CTYPE max3(CTYPE, CTYPE, CTYPE);
-int sign(CTYPE);
-void compare(CTYPE*, CTYPE*, CTYPE, CTYPE);
+inline CTYPE min3(CTYPE, CTYPE, CTYPE);
+inline CTYPE max3(CTYPE, CTYPE, CTYPE);
+inline int sign(CTYPE);
+inline void compare(CTYPE*, CTYPE*, CTYPE, CTYPE);
 
-int rotation_matrix(orbit, CTYPE [3][3]);
-int define_unit_vector(CTYPE, CTYPE, CTYPE[3]);
-int apply_rotation(CTYPE[3][3] , CTYPE[3], CTYPE[3]);
-CTYPE distance_to_center(orbit, CTYPE[3], CTYPE);
+inline int rotation_matrix(orbit, CTYPE [3][3]);
+inline int define_unit_vector(CTYPE, CTYPE, CTYPE[3]);
+inline int apply_rotation(CTYPE[3][3] , CTYPE[3], CTYPE[3]);
+inline CTYPE distance_to_center(orbit, CTYPE[3], CTYPE);
 
 int Siddon(
 	   PyArrayObject*, /* 2D array containing the projection*/
