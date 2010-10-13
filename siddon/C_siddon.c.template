@@ -20,7 +20,7 @@
 
 #define IND1(a, i) *((CTYPE *) PyArray_GETPTR1(a, i))
 #define IND2(a, i, j) *((CTYPE *) PyArray_GETPTR2(a, i, j))
-#define IND3(a, i, j, k) *((CTYPE *) PyArray_GETPTR3(a, i, j, k))
+#define IND3(a, i) *((CTYPE *) PyArray_GETPTR3(a, i[0], i[1], i[2]))
 
 /*header */
 
@@ -69,8 +69,8 @@ void init_C_siddon_%(obstacle)s_%(ctype)s();
 static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *args);
 
 /* function declaration */
-inline void project(PyArrayObject*, uint, uint, uint, PyArrayObject*, uint[NDIM], CTYPE);
-inline void backproject(PyArrayObject*, uint, uint, uint, PyArrayObject*, uint[NDIM], CTYPE);
+inline void project(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
+inline void backproject(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
 
 inline int in_cube(RoiO, uint[NDIM]);
 inline int sun(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
@@ -86,12 +86,20 @@ inline void define_unit_vector(CTYPE, CTYPE, CTYPE[NDIM]);
 inline void apply_rotation(CTYPE[NDIM][NDIM] , CTYPE[NDIM], CTYPE[NDIM]);
 inline CTYPE distance_to_center(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
 
-uint Siddon(
+inline void trace_ray(CTYPE[NDIM],
+	       CTYPE[NDIM],
+	       PyArrayObject*,
+	       uint[NDIM],
+	       PyArrayObject*,
+	       RoiO*,
+	       uint);
+
+void Siddon(
 	   PyArrayObject*, /* 2D array containing the projection*/
 	   uint, /* current time index */
 	   PyArrayObject*, /* 3D array containing the object */
 	   orbit, /* orbit structure containing detector position parameters */
-	   RoiO, /* volume structure containing object discretization parameters*/
+	   RoiO*, /* volume structure containing object discretization parameters*/
 	   detector, /* detector structure containing detector discretization parameters */
 	   uint /* projection or backprojection flag : 1 if backprojection */
 	   );/* output 1 if no error */
@@ -204,31 +212,63 @@ static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *ar
     detector.n1 = n1;
     detector.n2 = n2;
     /* Siddon for each time index */
-    Siddon(data, t, map, orbit, RoiO, detector, BPJ);
+    Siddon(data, t, map, orbit, &RoiO, detector, BPJ);
   }
   Py_RETURN_NONE;
 }
 
-uint Siddon(PyArrayObject * data,
+void Siddon(PyArrayObject * data,
 	   uint t,
 	   PyArrayObject * cube,
 	   orbit orbit,
-	   RoiO RoiO,
+	   RoiO * pRoiO,
 	   detector detector,
 	   uint BPJ)
 {
   /* declarations */
   /* loop incremented integers*/
-  uint i, j ,k;
+  uint id[NDIM];
   /* to store constants defining the ray direction */
   /* lambda : latitude, longitude */
   CTYPE lambda, gamma;
   /* normalized direction vector in image referentiel */
   CTYPE u2[NDIM];
   /* in solar referentiel */
-  CTYPE u0[NDIM], u0inv[NDIM];
+  CTYPE u0[NDIM];
   /* rotation matrix from image to solar referentiel */
   CTYPE R[NDIM][NDIM];
+
+  id[2] = t;
+  /* the rotation matrix does not change for one image */
+  rotation_matrix(orbit, R);
+  /* loops on angles (detectors pixels) */
+  for(id[0] = 0 ; id[0] < detector.n1 ; id[0]++)
+  {
+    gamma = (id[0] - detector.s1) * detector.p1;
+    for(id[1] = 0 ; id[1] < detector.n2 ; id[1]++)
+    {
+      /* skip computation if the value is a NaN */
+      if((isNaN(IND3(data, id)) == 0))
+      {
+	lambda = (id[1] - detector.s2) * detector.p2;
+	define_unit_vector(lambda, gamma, u2);
+	apply_rotation(R, u2, u0);
+	trace_ray(orbit.M, u0, data, id, cube, pRoiO, BPJ);
+      }
+    }
+  }
+}
+
+void trace_ray(CTYPE M[3],
+	       CTYPE u0[3],
+	       PyArrayObject * data,
+	       uint id[3],
+	       PyArrayObject * cube,
+	       RoiO * pRoiO,
+	       uint BPJ)
+{
+  RoiO RoiO = * pRoiO;
+  uint k;
   /* distance of the current voxel to the detector   */
   CTYPE ac; 
   /* array containing the distances to the 6 faces of the volume*/
@@ -251,11 +291,9 @@ uint Siddon(PyArrayObject * data,
      subscripts*/
   int update[NDIM];
   uint next[NDIM];
-  /* distance to Sun center */
-  CTYPE d;
   /**/
   CTYPE RoiOpinv[NDIM], RoiOdinv[NDIM];
-  /*to avoid multiple fabs*/
+  CTYPE u0inv[NDIM];
 
   /*replace divisions by multiplications*/
   for(k = 0; k < NDIM; k ++)
@@ -264,133 +302,110 @@ uint Siddon(PyArrayObject * data,
     RoiOdinv[k] = 1 / RoiO.d[k];
   }
 
-  /* the rotation matrix does not change for one image */
-  rotation_matrix(orbit, R);
-  /* loops on angles (detectors pixels) */
-  for(i = 0 ; i < detector.n1 ; i++)
+  /* impact point determination */
+  for(k = 0 ; k < NDIM ; k++)
   {
-    gamma = (i - detector.s1) * detector.p1;
-    for(j = 0 ; j < detector.n2 ; j++)
+    if(u0[k] == 0){
+      p[k] = INF;
+      a1[k] = - INF;
+      an[k] = INF;}
+    else{
+      u0inv[k] = 1 / u0[k];
+      p[k] = RoiO.p[k] * u0inv[k];
+      a1[k] = (RoiO.min[k] - M[k]) * u0inv[k];
+      an[k] = (RoiO.max[k] - M[k]) * u0inv[k];}
+
+    compare(&Imin[k], &Imax[k], a1[k], an[k]);
+  }
+  amin = max3(Imin[0], Imin[1], Imin[2]);
+  amax = min3(Imax[0], Imax[1], Imax[2]);
+  /* otherwise the ray does not go through the cube */
+  if(amin < amax)
+  {
+    /*loop on each dimension*/
+    for(k = 0 ; k < NDIM ; k ++)
     {
-      /* skip computation if the value is a NaN */
-      if((isNaN(IND3(data, i, j, t)) == 0))
+      /* initial and final points in cartesian coordinates */
+      e[k] = M[k] + amin * u0[k];
+      update[k] = sign(u0[k]);
+      /*  initial intersection*/
+      iv[k] = (uint)( (e[k] - RoiO.min[k]) * RoiOpinv[k]);
+      /* initial voxel of each kind */
+      iv[k] -= (uint)( (e[k] - RoiO.min[k]) * RoiOdinv[k]);
+      /* next intersection of each kind */
+      if(update[k] == 1)
+	next[k] = iv[k] + 1;
+      else if(update[k] == -1)
+	next[k] = iv[k];
+      else
+	next[k] = INF * RoiO.n[k];
+      D[k] = next[k] * p[k] + a1[k] - amin;
+    }
+    /* loop initilization */
+    ac = amin;
+    /* check if still into the cube and did not reached the obstacles */
+    while(in_cube(RoiO, iv) && %(obstacle)s(M, u0, ac))
+    {
+      /* check along which dimension is the current intersection */
+      if((D[0] <= D[1]) && (D[0] <= D[2]))
       {
-	lambda = (j - detector.s2) * detector.p2;
-	define_unit_vector(lambda, gamma, u2);
-	apply_rotation(R, u2, u0);
-	/* distances between 2 intersections of each kind */
-	/* impact point determination */
-	/* distances to faces */
-	for(k = 0 ; k < NDIM ; k++)
-	{
-	  if(u0[k] == 0){
-	    p[k] = INF;
-	    a1[k] = - INF;
-	    an[k] = INF;}
-	  else{
-	    u0inv[k] = 1 / u0[k];
-	    p[k] = RoiO.p[k] * u0inv[k];
-	    a1[k] = (RoiO.min[k] - orbit.M[k]) * u0inv[k];
-	    an[k] = (RoiO.max[k] - orbit.M[k]) * u0inv[k];}
-
-	  compare(&Imin[k], &Imax[k], a1[k], an[k]);
-	}
-	amin = max3(Imin[0], Imin[1], Imin[2]);
-	amax = min3(Imax[0], Imax[1], Imax[2]);
-	/* otherwise the ray does not go through the cube */
-	if(amin < amax)
-	{
-	  /*loop on each dimension*/
-	  for(k = 0 ; k < NDIM ; k ++)
-	  {
-	    /* initial and final points in cartesian coordinates */
-	    e[k] = orbit.M[k] + amin * u0[k];
-	    update[k] = sign(u0[k]);
-	    /*  initial intersection*/
-	    iv[k] = (uint)( (e[k] - RoiO.min[k]) * RoiOpinv[k]);
-	    /* initial voxel of each kind */
-	    iv[k] -= (uint)( (e[k] - RoiO.min[k]) * RoiOdinv[k]);
-	    /* next intersection of each kind */
-	    if(update[k] == 1)
-	      next[k] = iv[k] + 1;
-	    else if(update[k] == -1)
-	      next[k] = iv[k];
-	    else
-	      next[k] = INF * RoiO.n[k];
-
-	    D[k] = next[k] * p[k] + a1[k] - amin;
-	  }
-
-	  /* loop initilization */
-	  ac = amin;
-	  d = distance_to_center(orbit.M, u0, ac);
-	  /* check if still into the cube and did not reached the obstacles */
-	  while(in_cube(RoiO, iv) && %(obstacle)s(orbit.M, u0, ac))
-	  {
-	    /* check along which dimension is the current intersection */
-	    if((D[0] <= D[1]) && (D[0] <= D[2]))
-	    {
-	      ac += D[0];
-	      /* projection / backprojection*/
-	      if(!BPJ)
-		project(data, i, j, t, cube, iv, D[0]);
-	      else
-		backproject(data, i, j, t, cube, iv, D[0]);
-	      /* update voxel subscript */
-	      iv[0] += update[0];
-	      /* update distances to next intersections*/
-	      D[1] -= D[0];
-	      D[2] -= D[0];
-	      D[0] = fabs(p[0]);
-	    }
-	    else if((D[1] < D[0]) && (D[1] <= D[2]))
-	    {
-	      ac += D[1];
-	      /* projection/backprojection*/
-	      if(!BPJ)
-		project(data, i, j, t, cube, iv, D[1]);
-	      else
-		backproject(data, i, j, t, cube, iv, D[1]);
-	      /* update voxel subscript */
-	      iv[1] += update[1];
-	      /* update distances to next intersections*/
-	      D[0] -= D[1];
-	      D[2] -= D[1];
-	      D[1] = fabs(p[1]);
-	    }
-	    else if((D[2] < D[0]) && (D[2] < D[1]))
-	    {
-	      ac += D[2];
-	      /* projection/backprojection*/
-	      if(!BPJ)
-		project(data, i, j, t, cube, iv, D[2]);
-	      else
-		backproject(data, i, j, t, cube, iv, D[2]);
-	      /* update voxel subscript */
-	      iv[2] += update[2];
-	      /* update distances to next intersections*/
-	      D[0] -= D[2];
-	      D[1] -= D[2];
-	      D[2] = fabs(p[2]);
-	    }
-	  }
-	}
+	ac += D[0];
+	/* projection / backprojection*/
+	if(!BPJ)
+	  project(data, id, cube, iv, D[0]);
+	else
+	  backproject(data, id, cube, iv, D[0]);
+	/* update voxel subscript */
+	iv[0] += update[0];
+	/* update distances to next intersections*/
+	D[1] -= D[0];
+	D[2] -= D[0];
+	D[0] = fabs(p[0]);
+      }
+      else if((D[1] < D[0]) && (D[1] <= D[2]))
+      {
+	ac += D[1];
+	/* projection/backprojection*/
+	if(!BPJ)
+	  project(data, id, cube, iv, D[1]);
+	else
+	  backproject(data, id, cube, iv, D[1]);
+	/* update voxel subscript */
+	iv[1] += update[1];
+	/* update distances to next intersections*/
+	D[0] -= D[1];
+	D[2] -= D[1];
+	D[1] = fabs(p[1]);
+      }
+      else if((D[2] < D[0]) && (D[2] < D[1]))
+      {
+	ac += D[2];
+	/* projection/backprojection*/
+	if(!BPJ)
+	  project(data, id, cube, iv, D[2]);
+	else
+	  backproject(data, id, cube, iv, D[2]);
+	/* update voxel subscript */
+	iv[2] += update[2];
+	/* update distances to next intersections*/
+	D[0] -= D[2];
+	D[1] -= D[2];
+	D[2] = fabs(p[2]);
       }
     }
   }
-  return 0;
 }
 
 /* projection update */
-void project(PyArrayObject * data, uint i, uint j, uint t, PyArrayObject * cube, uint iv[NDIM], CTYPE d)
+void project(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDIM], CTYPE d)
 {
-  IND3(data, i, j, t) += d * IND3(cube, iv[0], iv[1], iv[2]);
+  IND3(data, id) += d * IND3(cube, iv);
 }
 
 /* backprojection update*/
-void backproject(PyArrayObject * data, uint i, uint j, uint t, PyArrayObject * cube, uint iv[NDIM], CTYPE d)
+void backproject(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDIM], CTYPE d)
 {
-  IND3(cube, iv[0], iv[1], iv[2]) += d * IND3(data, i, j, t);
+  IND3(cube, iv) += d * IND3(data, id);
 }
 
 /* check if still in map cube */
