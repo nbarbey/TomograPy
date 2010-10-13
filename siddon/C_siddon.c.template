@@ -68,7 +68,6 @@ void init_C_siddon_%(obstacle)s_%(ctype)s();
 static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *args);
 
 /* function declaration */
-typedef void (*projPtr)(PyArrayObject*, int, int, int, PyArrayObject*, int[3], CTYPE);
 inline void project(PyArrayObject*, int, int, int, PyArrayObject*, int[3], CTYPE);
 inline void backproject(PyArrayObject*, int, int, int, PyArrayObject*, int[3], CTYPE);
 
@@ -333,9 +332,9 @@ int Siddon(PyArrayObject * data,
 	      ac += D[0];
 	      /* projection / backprojection*/
 	      if(!BPJ)
-		IND3(data, i, j, t) += D[0] * IND3(cube, iv[0], iv[1], iv[2]);
+		project(data, i, j, t, cube, iv, D[0]);
 	      else
-		IND3(cube, iv[0], iv[1], iv[2]) += D[0] * IND3(data, i, j, t);
+		backproject(data, i, j, t, cube, iv, D[0]);
 	      /* update voxel subscript */
 	      iv[0] += update[0];
 	      /* update distances to next intersections*/
@@ -348,9 +347,9 @@ int Siddon(PyArrayObject * data,
 	      ac += D[1];
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		IND3(data, i, j, t) += D[1] * IND3(cube, iv[0], iv[1], iv[2]);
+		project(data, i, j, t, cube, iv, D[1]);
 	      else
-		IND3(cube, iv[0], iv[1], iv[2]) += D[1] * IND3(data, i, j, t);
+		backproject(data, i, j, t, cube, iv, D[1]);
 	      /* update voxel subscript */
 	      iv[1] += update[1];
 	      /* update distances to next intersections*/
@@ -363,9 +362,9 @@ int Siddon(PyArrayObject * data,
 	      ac += D[2];
 	      /* projection/backprojection*/
 	      if(!BPJ)
-		IND3(data, i, j, t) += D[2] * IND3(cube, iv[0], iv[1], iv[2]);
+		project(data, i, j, t, cube, iv, D[2]);
 	      else
-		IND3(cube, iv[0], iv[1], iv[2]) += D[2] * IND3(data, i, j, t);
+		backproject(data, i, j, t, cube, iv, D[2]);
 	      /* update voxel subscript */
 	      iv[2] += update[2];
 	      /* update distances to next intersections*/
