@@ -73,8 +73,8 @@ inline void project(PyArrayObject*, uint, uint, uint, PyArrayObject*, uint[NDIM]
 inline void backproject(PyArrayObject*, uint, uint, uint, PyArrayObject*, uint[NDIM], CTYPE);
 
 inline int in_cube(RoiO, uint[NDIM]);
-inline int sun(orbit, CTYPE[NDIM], CTYPE);
-inline int none(orbit, CTYPE[NDIM], CTYPE);
+inline int sun(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
+inline int none(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
 
 inline CTYPE min3(CTYPE, CTYPE, CTYPE);
 inline CTYPE max3(CTYPE, CTYPE, CTYPE);
@@ -84,7 +84,7 @@ inline void compare(CTYPE*, CTYPE*, CTYPE, CTYPE);
 inline void rotation_matrix(orbit, CTYPE [NDIM][NDIM]);
 inline void define_unit_vector(CTYPE, CTYPE, CTYPE[NDIM]);
 inline void apply_rotation(CTYPE[NDIM][NDIM] , CTYPE[NDIM], CTYPE[NDIM]);
-inline CTYPE distance_to_center(orbit, CTYPE[NDIM], CTYPE);
+inline CTYPE distance_to_center(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
 
 uint Siddon(
 	   PyArrayObject*, /* 2D array containing the projection*/
@@ -273,7 +273,7 @@ uint Siddon(PyArrayObject * data,
     for(j = 0 ; j < detector.n2 ; j++)
     {
       /* skip computation if the value is a NaN */
-      if( (!BPJ) || (isNaN(IND3(data, i, j, t)) == 0 ) )
+      if((isNaN(IND3(data, i, j, t)) == 0))
       {
 	lambda = (j - detector.s2) * detector.p2;
 	define_unit_vector(lambda, gamma, u2);
@@ -307,9 +307,9 @@ uint Siddon(PyArrayObject * data,
 	    e[k] = orbit.M[k] + amin * u0[k];
 	    update[k] = sign(u0[k]);
 	    /*  initial intersection*/
-	    iv[k] = (uint)( (e[k] - RoiO.min[k]) / RoiO.p[k]);
+	    iv[k] = (uint)( (e[k] - RoiO.min[k]) * RoiOpinv[k]);
 	    /* initial voxel of each kind */
-	    iv[k] -= (uint)( (e[k] - RoiO.min[k]) / RoiO.d[k]);
+	    iv[k] -= (uint)( (e[k] - RoiO.min[k]) * RoiOdinv[k]);
 	    /* next intersection of each kind */
 	    if(update[k] == 1)
 	      next[k] = iv[k] + 1;
@@ -323,9 +323,9 @@ uint Siddon(PyArrayObject * data,
 
 	  /* loop initilization */
 	  ac = amin;
-	  d = distance_to_center(orbit, u0, ac);
+	  d = distance_to_center(orbit.M, u0, ac);
 	  /* check if still into the cube and did not reached the obstacles */
-	  while(in_cube(RoiO, iv) && %(obstacle)s(orbit, u0, ac))
+	  while(in_cube(RoiO, iv) && %(obstacle)s(orbit.M, u0, ac))
 	  {
 	    /* check along which dimension is the current intersection */
 	    if((D[0] <= D[1]) && (D[0] <= D[2]))
@@ -400,15 +400,15 @@ int in_cube(RoiO RoiO, uint iv[NDIM])
 }
 
 /* check if the ray has reached the sphere of radius 1 */
-int sun(orbit orbit, CTYPE u0[NDIM], CTYPE ac)
+int sun(CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE ac)
 {
   CTYPE d;
-  d = distance_to_center(orbit, u0, ac);
+  d = distance_to_center(M, u0, ac);
   return d > 1;
 }
 
 /* always true : replace sun if no sun obstacle is desired */
-int none(orbit orbit, CTYPE u0[NDIM], CTYPE ac)
+int none(CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE ac)
 {
   return 1;
 }
@@ -494,11 +494,11 @@ void apply_rotation(CTYPE R[NDIM][NDIM], CTYPE u2[NDIM], CTYPE u0[NDIM])
   u0[2] = R[2][0] * u2[0] + R[2][1] * u2[1] + R[2][2] * u2[2];
 }
 
-CTYPE distance_to_center(orbit orbit, CTYPE u0[NDIM], CTYPE ac)
+CTYPE distance_to_center(CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE ac)
 {
   CTYPE d;
-  d = SQ(orbit.M[0] + ac * u0[0]);
-  d += SQ(orbit.M[1] + ac * u0[1]);
-  d += SQ(orbit.M[2] + ac * u0[2]);
+  d = SQ(M[0] + ac * u0[0]);
+  d += SQ(M[1] + ac * u0[1]);
+  d += SQ(M[2] + ac * u0[2]);
   return d;
 }
