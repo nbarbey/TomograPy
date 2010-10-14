@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import time
 import numpy as np
-import scipy.sparse.linalg as spl
 import siddon
 # object
 n = 512
@@ -32,7 +31,8 @@ for n_images in [10, 30, 60, 120]:
     data = siddon.projector(data, obj)
     print("projection time : " + str(time.time() - t))
     # backprojection
+    x0 = siddon.fa.zeros(obj.shape, header=header)
     t = time.time()
-    x0 = siddon.backprojector(data, obj.copy())
+    x0 = siddon.backprojector(data, x0)
     print("backprojection time : " + str(time.time() - t))
 
