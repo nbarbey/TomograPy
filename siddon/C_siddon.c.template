@@ -69,13 +69,19 @@ void init_C_siddon_%(obstacle)s_%(ctype)s();
 static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *args);
 
 /* function declaration */
-inline void trace_ray(CTYPE[NDIM],
-	       CTYPE[NDIM],
-	       PyArrayObject*,
-	       uint[NDIM],
-	       PyArrayObject*,
-	       RoiO*,
-	       uint);
+inline void trace_ray_projection(CTYPE[NDIM],
+				 CTYPE[NDIM],
+				 PyArrayObject*,
+				 uint[NDIM],
+				 PyArrayObject*,
+				 RoiO*);
+
+inline void trace_ray_backprojection(CTYPE[NDIM],
+				     CTYPE[NDIM],
+				     PyArrayObject*,
+				     uint[NDIM],
+				     PyArrayObject*,
+				     RoiO*);
 
 inline void initialize_raytracing(RoiO *,
 				  CTYPE[NDIM],
@@ -278,30 +284,50 @@ void Siddon(PyArrayObject * data,
   /* the rotation matrix does not change for one image */
   rotation_matrix(orbit, R);
   /* loops on angles (detectors pixels) */
-  for(id[0] = 0 ; id[0] < detector.n1 ; id[0]++)
+  if(!BPJ)
   {
-    gamma = (id[0] - detector.s1) * detector.p1;
-    for(id[1] = 0 ; id[1] < detector.n2 ; id[1]++)
+    for(id[0] = 0 ; id[0] < detector.n1 ; id[0]++)
     {
-      /* skip computation if the value is a NaN */
-      if((isNaN(IND3(data, id)) == 0))
+      gamma = (id[0] - detector.s1) * detector.p1;
+      for(id[1] = 0 ; id[1] < detector.n2 ; id[1]++)
       {
-	lambda = (id[1] - detector.s2) * detector.p2;
-	define_unit_vector(lambda, gamma, u2);
-	apply_rotation(R, u2, u0);
-	trace_ray(orbit.M, u0, data, id, cube, pRoiO, BPJ);
+	/* skip computation if the value is a NaN */
+	if((isNaN(IND3(data, id)) == 0))
+	{
+	  lambda = (id[1] - detector.s2) * detector.p2;
+	  define_unit_vector(lambda, gamma, u2);
+	  apply_rotation(R, u2, u0);
+	  trace_ray_projection(orbit.M, u0, data, id, cube, pRoiO);
+	}
+      }
+    }
+  }
+  else
+  {
+    for(id[0] = 0 ; id[0] < detector.n1 ; id[0]++)
+    {
+      gamma = (id[0] - detector.s1) * detector.p1;
+      for(id[1] = 0 ; id[1] < detector.n2 ; id[1]++)
+      {
+	/* skip computation if the value is a NaN */
+	if((isNaN(IND3(data, id)) == 0))
+	{
+	  lambda = (id[1] - detector.s2) * detector.p2;
+	  define_unit_vector(lambda, gamma, u2);
+	  apply_rotation(R, u2, u0);
+	  trace_ray_backprojection(orbit.M, u0, data, id, cube, pRoiO);
+	}
       }
     }
   }
 }
 
-void trace_ray(CTYPE M[3],
+void trace_ray_projection(CTYPE M[3],
 	       CTYPE u0[3],
 	       PyArrayObject * data,
 	       uint id[3],
 	       PyArrayObject * cube,
-	       RoiO * pRoiO,
-	       uint BPJ)
+	       RoiO * pRoiO)
 {
   RoiO RoiO = * pRoiO;
   /* distance of the current voxel to the detector   */
@@ -331,12 +357,48 @@ void trace_ray(CTYPE M[3],
     initialize_raytracing(pRoiO, M, u0, p, a1, amin, update, iv, D);
     ac = amin;
     /* check if still into the cube and did not reached the obstacles */
-    if(!BPJ)
-      while(in_cube(RoiO, iv) && %(obstacle)s(M, u0, ac))
-	voxel_project(data, id, cube, iv, D, ac, p, update);
-    else
-      while(in_cube(RoiO, iv) && %(obstacle)s(M, u0, ac))
-	voxel_backproject(data, id, cube, iv, D, ac, p, update);
+    while(in_cube(RoiO, iv) && %(obstacle)s(M, u0, ac))
+      voxel_project(data, id, cube, iv, D, ac, p, update);
+  }
+}
+
+void trace_ray_backprojection(CTYPE M[3],
+			      CTYPE u0[3],
+			      PyArrayObject * data,
+			      uint id[3],
+			      PyArrayObject * cube,
+			      RoiO * pRoiO)
+{
+  RoiO RoiO = * pRoiO;
+  /* distance of the current voxel to the detector   */
+  CTYPE ac; 
+  /* array containing the distances to the 6 faces of the volume*/
+  CTYPE a1[NDIM];
+  /* minimum of the distance array and it subscript */
+  CTYPE amin=0;
+  CTYPE amax=0;
+  /* subscripts of the current voxel */
+  uint iv[NDIM];
+  /* distances to the next intersection with a x,y or z constant
+     plan of the grid */
+  CTYPE p[NDIM];
+  /* current distances to the next intersection with a x,y or z 
+     constant plan of the grid */
+  CTYPE D[NDIM];
+  /* to discriminate between increasing and decreasing of voxel 
+     subscripts*/
+  int update[NDIM];
+
+  intersect_cube(pRoiO, M, u0, p, a1, &amin, &amax);
+  /* otherwise the ray does not go through the cube */
+  if(amin < amax)
+  {
+    /* loop initilization */
+    initialize_raytracing(pRoiO, M, u0, p, a1, amin, update, iv, D);
+    ac = amin;
+    /* check if still into the cube and did not reached the obstacles */
+    while(in_cube(RoiO, iv) && %(obstacle)s(M, u0, ac))
+      voxel_backproject(data, id, cube, iv, D, ac, p, update);
   }
 }
 
