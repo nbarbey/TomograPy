@@ -21,7 +21,7 @@
 #define IND1(a, i) *((CTYPE *) PyArray_GETPTR1(a, i))
 #define IND2(a, i) *((CTYPE *) PyArray_GETPTR2(a, i[0], i[1]))
 #define IND3(a, i) *((CTYPE *) PyArray_GETPTR3(a, i[0], i[1], i[2]))
-#define IND3t(a, i, j) *((CTYPE *) PyArray_GETPTR3(a, i[0], i[1], j))
+#define IND3t(a, i, j) *((CTYPE *) PyArray_GETPTR4(a, i[0], i[1], j))
 #define IND4(a, i) *((CTYPE *) PyArray_GETPTR4(a, i[0], i[1], i[2], i[3]))
 
 /*header */
