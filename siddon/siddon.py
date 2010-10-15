@@ -173,7 +173,7 @@ def projector4d(data, cube, obstacle=None):
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"pjt"
                       }
-    proj_str = "siddon4d" + suffix_str + "(data, cube)"
+    proj_str = "siddon" + suffix_str + "(data, cube)"
     exec(proj_str % my_siddon_dict)
     return data
 
@@ -207,7 +207,7 @@ def backprojector4d(data, cube, obstacle=None):
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"bpjt"
                       }
-    proj_str = "siddon4d" + suffix_str + "(data, cube)"
+    proj_str = "siddon" + suffix_str + "(data, cube)"
     exec(proj_str % my_siddon_dict)
     return cube
 
