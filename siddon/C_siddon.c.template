@@ -137,15 +137,23 @@ inline void define_unit_vector(CTYPE, CTYPE, CTYPE[NDIM]);
 inline void apply_rotation(CTYPE[NDIM][NDIM] , CTYPE[NDIM], CTYPE[NDIM]);
 inline CTYPE distance_to_center(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
 
-void Siddon(
-	   PyArrayObject*, /* 2D array containing the projection*/
-	   uint, /* current time index */
-	   PyArrayObject*, /* 3D array containing the object */
-	   orbit, /* orbit structure containing detector position parameters */
-	   RoiO*, /* volume structure containing object discretization parameters*/
-	   detector, /* detector structure containing detector discretization parameters */
-	   uint /* projection or backprojection flag : 1 if backprojection */
-	   );/* output 1 if no error */
+inline void Siddon_pj(
+	       PyArrayObject*,
+	       uint,
+	       PyArrayObject*,
+	       orbit,
+	       RoiO*,
+	       detector
+	       );
+
+inline void Siddon_bpj(
+		PyArrayObject*,
+		uint,
+		PyArrayObject*,
+		orbit,
+		RoiO*,
+		detector
+		);
 
 /*code */
 
@@ -236,37 +244,64 @@ static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *ar
   RoiO.max[1] = RoiO.min[1] + RoiO.d[1];
   RoiO.max[2] = RoiO.min[2] + RoiO.d[2];
   /* Loop on the time / image dimension */
-  #pragma omp parallel shared(RoiO, data, map, BPJ) private(t, orbit, detector)
-  #pragma omp for
-  for(t = 0 ; t < nt ; t++){
-    /* define orbit of current image */
-    orbit.lon = IND1(lon, t);
-    orbit.lat = IND1(lat, t);
-    orbit.rol = IND1(rol, t);
-    orbit.d = IND1(d, t);
-    orbit.M[0] = IND1(xd, t);
-    orbit.M[1] = IND1(yd, t);
-    orbit.M[2] = IND1(zd, t);
-    /* define the detector of current image */
-    detector.p1 = IND1(cdelt1, t);
-    detector.p2 = IND1(cdelt2, t);
-    detector.s1 = IND1(crpix1, t);
-    detector.s2 = IND1(crpix2, t);
-    detector.n1 = n1;
-    detector.n2 = n2;
-    /* Siddon for each time index */
-    Siddon(data, t, map, orbit, &RoiO, detector, BPJ);
+  if (!BPJ)
+  {
+    #pragma omp parallel shared(RoiO, data, map) private(t, orbit, detector)
+    #pragma omp for
+    for(t = 0 ; t < nt ; t++)
+    {
+      /* define orbit of current image */
+      orbit.lon = IND1(lon, t);
+      orbit.lat = IND1(lat, t);
+      orbit.rol = IND1(rol, t);
+      orbit.d = IND1(d, t);
+      orbit.M[0] = IND1(xd, t);
+      orbit.M[1] = IND1(yd, t);
+      orbit.M[2] = IND1(zd, t);
+      /* define the detector of current image */
+      detector.p1 = IND1(cdelt1, t);
+      detector.p2 = IND1(cdelt2, t);
+      detector.s1 = IND1(crpix1, t);
+      detector.s2 = IND1(crpix2, t);
+      detector.n1 = n1;
+      detector.n2 = n2;
+      /* Siddon for each time index */
+      Siddon_pj(data, t, map, orbit, &RoiO, detector);
+    }
+  }
+  else
+  {
+    #pragma omp parallel shared(RoiO, data, map) private(t, orbit, detector)
+    #pragma omp for
+    for(t = 0 ; t < nt ; t++){
+      /* define orbit of current image */
+      orbit.lon = IND1(lon, t);
+      orbit.lat = IND1(lat, t);
+      orbit.rol = IND1(rol, t);
+      orbit.d = IND1(d, t);
+      orbit.M[0] = IND1(xd, t);
+      orbit.M[1] = IND1(yd, t);
+      orbit.M[2] = IND1(zd, t);
+      /* define the detector of current image */
+      detector.p1 = IND1(cdelt1, t);
+      detector.p2 = IND1(cdelt2, t);
+      detector.s1 = IND1(crpix1, t);
+      detector.s2 = IND1(crpix2, t);
+      detector.n1 = n1;
+      detector.n2 = n2;
+      /* Siddon for each time index */
+      Siddon_bpj(data, t, map, orbit, &RoiO, detector);
+    }
   }
   Py_RETURN_NONE;
 }
 
-void Siddon(PyArrayObject * data,
+void Siddon_pj(PyArrayObject * data,
 	   uint t,
 	   PyArrayObject * cube,
 	   orbit orbit,
 	   RoiO * pRoiO,
-	   detector detector,
-	   uint BPJ)
+	   detector detector)
 {
   /* declarations */
   /* loop incremented integers*/
@@ -285,39 +320,59 @@ void Siddon(PyArrayObject * data,
   /* the rotation matrix does not change for one image */
   rotation_matrix(orbit, R);
   /* loops on angles (detectors pixels) */
-  if(!BPJ)
+  for(id[0] = 0 ; id[0] < detector.n1 ; id[0]++)
   {
-    for(id[0] = 0 ; id[0] < detector.n1 ; id[0]++)
+    gamma = (id[0] - detector.s1) * detector.p1;
+    for(id[1] = 0 ; id[1] < detector.n2 ; id[1]++)
     {
-      gamma = (id[0] - detector.s1) * detector.p1;
-      for(id[1] = 0 ; id[1] < detector.n2 ; id[1]++)
+      /* skip computation if the value is a NaN */
+      if((isNaN(IND3(data, id)) == 0))
       {
-	/* skip computation if the value is a NaN */
-	if((isNaN(IND3(data, id)) == 0))
-	{
-	  lambda = (id[1] - detector.s2) * detector.p2;
-	  define_unit_vector(lambda, gamma, u2);
-	  apply_rotation(R, u2, u0);
-	  trace_ray_projection(orbit.M, u0, data, id, cube, pRoiO);
-	}
+	lambda = (id[1] - detector.s2) * detector.p2;
+	define_unit_vector(lambda, gamma, u2);
+	apply_rotation(R, u2, u0);
+	trace_ray_projection(orbit.M, u0, data, id, cube, pRoiO);
       }
     }
   }
-  else
+}
+
+void Siddon_bpj(PyArrayObject * data,
+	   uint t,
+	   PyArrayObject * cube,
+	   orbit orbit,
+	   RoiO * pRoiO,
+	   detector detector)
+{
+  /* declarations */
+  /* loop incremented integers*/
+  uint id[NDIM];
+  /* to store constants defining the ray direction */
+  /* lambda : latitude, longitude */
+  CTYPE lambda, gamma;
+  /* normalized direction vector in image referentiel */
+  CTYPE u2[NDIM];
+  /* in solar referentiel */
+  CTYPE u0[NDIM];
+  /* rotation matrix from image to solar referentiel */
+  CTYPE R[NDIM][NDIM];
+
+  id[2] = t;
+  /* the rotation matrix does not change for one image */
+  rotation_matrix(orbit, R);
+  /* loops on angles (detectors pixels) */
+  for(id[0] = 0 ; id[0] < detector.n1 ; id[0]++)
   {
-    for(id[0] = 0 ; id[0] < detector.n1 ; id[0]++)
+    gamma = (id[0] - detector.s1) * detector.p1;
+    for(id[1] = 0 ; id[1] < detector.n2 ; id[1]++)
     {
-      gamma = (id[0] - detector.s1) * detector.p1;
-      for(id[1] = 0 ; id[1] < detector.n2 ; id[1]++)
+      /* skip computation if the value is a NaN */
+      if((isNaN(IND3(data, id)) == 0))
       {
-	/* skip computation if the value is a NaN */
-	if((isNaN(IND3(data, id)) == 0))
-	{
-	  lambda = (id[1] - detector.s2) * detector.p2;
-	  define_unit_vector(lambda, gamma, u2);
-	  apply_rotation(R, u2, u0);
-	  trace_ray_backprojection(orbit.M, u0, data, id, cube, pRoiO);
-	}
+	lambda = (id[1] - detector.s2) * detector.p2;
+	define_unit_vector(lambda, gamma, u2);
+	apply_rotation(R, u2, u0);
+	trace_ray_backprojection(orbit.M, u0, data, id, cube, pRoiO);
       }
     }
   }
