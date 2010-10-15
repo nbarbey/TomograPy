@@ -103,7 +103,7 @@ inline void voxel(PyArrayObject*,
 		  CTYPE[NDIM],
 		  CTYPE,
 		  CTYPE[NDIM],
-		  uint[NDIM]);
+		  int[NDIM]);
 
 inline void pj(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
 inline void bpj(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
@@ -402,7 +402,7 @@ void voxel(PyArrayObject * data,
 	   CTYPE D[NDIM],
 	   CTYPE ac,
 	   CTYPE p[NDIM],
-	   uint update[NDIM])
+	   int update[NDIM])
 {
   /* check along which dimension is the current intersection */
   if((D[0] <= D[1]) && (D[0] <= D[2]))
