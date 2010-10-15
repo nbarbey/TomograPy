@@ -19,8 +19,11 @@ for ctype in ctypes:
         tmp_dict['obstacle'] = obstacle
         siddon_dict_list.append(tmp_dict)
 
+del tmp_dict, ctype, obstacle
+
 def generate_sources():
     for replace_dict in siddon_dict_list:
+        replace_dict['suffix'] = get_suffix(replace_dict)
         for template in templates:
             parse_template(template, replace_dict)
 
@@ -38,7 +41,7 @@ def parse_template(filename, values=None):
 
 def set_filename(filename, values):
     filename_list = filename.split(os.extsep)[:-1]
-    filename_list[-2] += get_suffix(values)
+    filename_list[-2] += values['suffix']
     return '.'.join(filename_list)
 
 def reverse_dict(in_dict):

@@ -66,8 +66,8 @@ typedef struct
   CTYPE max[NDIM];
 }RoiO;
 
-void init_C_siddon_%(obstacle)s_%(ctype)s();
-static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *args);
+void init_C_siddon%(suffix)s();
+static PyObject *call_siddon%(suffix)s(PyObject *self, PyObject *args);
 
 /* function declaration */
 inline void trace_ray_pj(CTYPE[NDIM],
@@ -157,18 +157,18 @@ inline void Siddon_bpj(
 
 /*code */
 
-static PyMethodDef _C_siddon_%(obstacle)s_%(ctype)sMethods[] = {
-  {"siddon", call_siddon_%(obstacle)s_%(ctype)s, METH_VARARGS},
+static PyMethodDef _C_siddon%(suffix)sMethods[] = {
+  {"siddon", call_siddon%(suffix)s, METH_VARARGS},
   {NULL, NULL}     /* Sentinel - marks the end of this structure */
 };
 
-void init_C_siddon_%(obstacle)s_%(ctype)s()  {
-  (void) Py_InitModule("_C_siddon_%(obstacle)s_%(ctype)s", _C_siddon_%(obstacle)s_%(ctype)sMethods);
+void init_C_siddon%(suffix)s()  {
+  (void) Py_InitModule("_C_siddon%(suffix)s", _C_siddon%(suffix)sMethods);
   import_array();  // Must be present for NumPy.  Called first after above line.
   Py_Initialize();
 }
 
-static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *args)
+static PyObject *call_siddon%(suffix)s(PyObject *self, PyObject *args)
 {
   /* Input and output matrices to be extracted from args */
   PyArrayObject *data, *map;
