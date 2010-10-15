@@ -188,7 +188,8 @@ def main():
     # reshape result
     fsol = fa.zeros(obj.shape, header=object_header)
     fsol[obj_mask == 0] = sol.flatten()
-    return fsol
+    fsol.tofits(output)
+    return None
 
 def parse_tuple(my_str):
     """
