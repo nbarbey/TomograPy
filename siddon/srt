@@ -184,9 +184,9 @@ def main():
     P, D, obj_mask, data_mask = models.srt(data, obj, **mask_opt)
     # inversion
     b = data[data_mask == 0]
-    sol = lo.quadratic_optimization(P, b, D, hypers, maxiter=100)
+    sol = lo.quadratic_optimization(P, b, D, hypers, maxiter=maxiter, tol=tol)
     # reshape result
-    fsol = fa.zeros(shape, header=header)
+    fsol = fa.zeros(obj.shape, header=header)
     fsol[obj_mask == 0] = sol.flatten()
     return fsol
 
