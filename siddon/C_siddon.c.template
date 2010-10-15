@@ -70,14 +70,14 @@ void init_C_siddon_%(obstacle)s_%(ctype)s();
 static PyObject *call_siddon_%(obstacle)s_%(ctype)s(PyObject *self, PyObject *args);
 
 /* function declaration */
-inline void trace_ray_projection(CTYPE[NDIM],
+inline void trace_ray_pj(CTYPE[NDIM],
 				 CTYPE[NDIM],
 				 PyArrayObject*,
 				 uint[NDIM],
 				 PyArrayObject*,
 				 RoiO*);
 
-inline void trace_ray_backprojection(CTYPE[NDIM],
+inline void trace_ray_bpj(CTYPE[NDIM],
 				     CTYPE[NDIM],
 				     PyArrayObject*,
 				     uint[NDIM],
@@ -102,7 +102,7 @@ inline void intersect_cube(RoiO * ,
 			   CTYPE *,
 			   CTYPE *);
 
-inline void voxel_project(PyArrayObject*,
+inline void voxel_pj(PyArrayObject*,
 			 uint[NDIM],
 			 PyArrayObject*,
 			 uint[NDIM],
@@ -111,7 +111,7 @@ inline void voxel_project(PyArrayObject*,
 			 CTYPE[NDIM],
 			 uint[NDIM]);
 
-inline void voxel_backproject(PyArrayObject*,
+inline void voxel_bpj(PyArrayObject*,
 			 uint[NDIM],
 			 PyArrayObject*,
 			 uint[NDIM],
@@ -331,7 +331,7 @@ void Siddon_pj(PyArrayObject * data,
 	lambda = (id[1] - detector.s2) * detector.p2;
 	define_unit_vector(lambda, gamma, u2);
 	apply_rotation(R, u2, u0);
-	trace_ray_projection(orbit.M, u0, data, id, cube, pRoiO);
+	trace_ray_pj(orbit.M, u0, data, id, cube, pRoiO);
       }
     }
   }
@@ -372,13 +372,13 @@ void Siddon_bpj(PyArrayObject * data,
 	lambda = (id[1] - detector.s2) * detector.p2;
 	define_unit_vector(lambda, gamma, u2);
 	apply_rotation(R, u2, u0);
-	trace_ray_backprojection(orbit.M, u0, data, id, cube, pRoiO);
+	trace_ray_bpj(orbit.M, u0, data, id, cube, pRoiO);
       }
     }
   }
 }
 
-void trace_ray_projection(CTYPE M[3],
+void trace_ray_pj(CTYPE M[3],
 	       CTYPE u0[3],
 	       PyArrayObject * data,
 	       uint id[3],
@@ -414,11 +414,11 @@ void trace_ray_projection(CTYPE M[3],
     ac = amin;
     /* check if still into the cube and did not reached the obstacles */
     while(in_cube(RoiO, iv) && %(obstacle)s(M, u0, ac))
-      voxel_project(data, id, cube, iv, D, ac, p, update);
+      voxel_pj(data, id, cube, iv, D, ac, p, update);
   }
 }
 
-void trace_ray_backprojection(CTYPE M[3],
+void trace_ray_bpj(CTYPE M[3],
 			      CTYPE u0[3],
 			      PyArrayObject * data,
 			      uint id[3],
@@ -454,7 +454,7 @@ void trace_ray_backprojection(CTYPE M[3],
     ac = amin;
     /* check if still into the cube and did not reached the obstacles */
     while(in_cube(RoiO, iv) && %(obstacle)s(M, u0, ac))
-      voxel_backproject(data, id, cube, iv, D, ac, p, update);
+      voxel_bpj(data, id, cube, iv, D, ac, p, update);
   }
 }
 
@@ -529,7 +529,7 @@ void intersect_cube(RoiO * pRoiO,
   *pamax = min3(Imax[0], Imax[1], Imax[2]);
 }
 
-void voxel_project(PyArrayObject * data,
+void voxel_pj(PyArrayObject * data,
 		   uint id[NDIM],
 		   PyArrayObject * cube,
 		   uint iv[NDIM],
@@ -577,7 +577,7 @@ void voxel_project(PyArrayObject * data,
   }
 }
 
-void voxel_backproject(PyArrayObject * data,
+void voxel_bpj(PyArrayObject * data,
 		       uint id[NDIM],
 		       PyArrayObject * cube,
 		       uint iv[NDIM],
