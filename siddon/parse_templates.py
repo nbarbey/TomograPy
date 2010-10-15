@@ -11,8 +11,7 @@ templates = (c_siddon_template,)# c_siddon4d_template)
 ctypes = {"float":"float32", "double":"float64",
           "int":"int16", "long":"int32"}
 obstacles = {"none":None, "sun":"sun"}
-pjs = {"pj":"pj", "bpj":"bpj"}
-
+pjs = {"pj":"pj", "bpj":"bpj", "pjt":"pjt", "bpjt":"bpjt"}
 
 siddon_dict_list = []
 for ctype in ctypes:

@@ -21,6 +21,7 @@
 #define IND1(a, i) *((CTYPE *) PyArray_GETPTR1(a, i))
 #define IND2(a, i) *((CTYPE *) PyArray_GETPTR2(a, i[0], i[1]))
 #define IND3(a, i) *((CTYPE *) PyArray_GETPTR3(a, i[0], i[1], i[2]))
+#define IND3t(a, i, j) *((CTYPE *) PyArray_GETPTR3(a, i[0], i[1], j))
 #define IND4(a, i) *((CTYPE *) PyArray_GETPTR4(a, i[0], i[1], i[2], i[3]))
 
 /*header */
@@ -107,6 +108,8 @@ inline void voxel(PyArrayObject*,
 
 inline void pj(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
 inline void bpj(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
+inline void pjt(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
+inline void bpjt(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
 
 inline int in_cube(RoiO, uint[NDIM]);
 inline int sun(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
@@ -454,6 +457,19 @@ void bpj(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDIM
 {
   IND3(cube, iv) += d * IND3(data, id);
 }
+
+/* projection with time */
+void pjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDIM], CTYPE d)
+{
+  IND3(data, id) += d * IND3t(cube, iv, id[2]);
+}
+
+/* backprojection with time*/
+void bpjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDIM], CTYPE d)
+{
+  IND3t(cube, iv, id[2]) += d * IND3(data, id);
+}
+
 
 /* check if still in map cube */
 int in_cube(RoiO RoiO, uint iv[NDIM])

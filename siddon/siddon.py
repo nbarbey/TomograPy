@@ -73,12 +73,6 @@ for siddon_dict in siddon_dict_list:
     exec_str += suffix_str
     exec(exec_str % siddon_dict)
     del exec_str
-#    exec_str = "from _C_siddon4d"
-#    exec_str += suffix_str
-#    exec_str += " import siddon as siddon4d"
-#    exec_str += suffix_str
-#    exec(exec_str % siddon_dict)
-#    del exec_str
 
 # projector
 def projector(data, cube, obstacle=None):
@@ -176,8 +170,10 @@ def projector4d(data, cube, obstacle=None):
     if data.dtype != cube.dtype:
         raise ValueError("data and cube map should have the same data-type")
     my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
-                      "obstacle":obstacles_inv[obstacle]}
-    proj_str = "siddon4d" + suffix_str + "(data, cube, 0)"
+                      "obstacle":obstacles_inv[obstacle],
+                      "pj":"pjt"
+                      }
+    proj_str = "siddon4d" + suffix_str + "(data, cube)"
     exec(proj_str % my_siddon_dict)
     return data
 
@@ -208,8 +204,10 @@ def backprojector4d(data, cube, obstacle=None):
     if data.dtype != cube.dtype:
         raise ValueError("data and cube map should have the same data-type")
     my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
-                      "obstacle":obstacles_inv[obstacle]}
-    proj_str = "siddon4d" + suffix_str + "(data, cube, 1)"
+                      "obstacle":obstacles_inv[obstacle],
+                      "pj":"bpjt"
+                      }
+    proj_str = "siddon4d" + suffix_str + "(data, cube)"
     exec(proj_str % my_siddon_dict)
     return cube
 
