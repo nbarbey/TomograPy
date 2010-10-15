@@ -10,8 +10,6 @@ import os
 pth = os.getcwd()
 execfile(pth + os.sep + "siddon" + os.sep + "parse_templates.py")
 
-names = ('C_siddon', 'C_siddon4d')
-
 ext_modules = [Extension(join('siddon', '_' + name + suffix_str % siddon_dict), 
                          [join('siddon', name + suffix_str + '.c') % siddon_dict,],
                          include_dirs=[join(get_include(), 'numpy', )],

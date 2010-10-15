@@ -12,10 +12,10 @@ obj = siddon.simu.object_from_header(header)
 obj[:] = siddon.phantom.shepp_logan(obj.shape)
 #obj[:] = 1.
 # data 
-image_header = {'n_images':100,
+image_header = {'n_images':10,
                 'SIMPLE':True, 'BITPIX':-64,
-                'NAXIS1':256, 'NAXIS2':256,
-                'CRPIX1':128, 'CRPIX2':128,
+                'NAXIS1':128, 'NAXIS2':128,
+                'CRPIX1':64, 'CRPIX2':64,
                 'CDELT1':6e-5, 'CDELT2':6e-5,
                 'CRVAL1':0., 'CRVAL2':0.,
                 }

@@ -1,23 +1,28 @@
 import os
 import numpy as np
 
+names = ('C_siddon',) #'C_siddon4d')
+
 c_siddon_template = "siddon" + os.sep + "C_siddon.c.template"
-c_siddon4d_template = "siddon" + os.sep + "C_siddon4d.c.template"
-templates = (c_siddon_template, c_siddon4d_template)
+#c_siddon4d_template = "siddon" + os.sep + "C_siddon4d.c.template"
+templates = (c_siddon_template,)# c_siddon4d_template)
 
-
-#ctypes = ["float", "double"]
+# values to replace in templates
 ctypes = {"float":"float32", "double":"float64",
           "int":"int16", "long":"int32"}
 obstacles = {"none":None, "sun":"sun"}
+pjs = {"pj":"pj", "bpj":"bpj"}
+
 
 siddon_dict_list = []
 for ctype in ctypes:
     for obstacle in obstacles:
-        tmp_dict = {}
-        tmp_dict['ctype'] = ctype
-        tmp_dict['obstacle'] = obstacle
-        siddon_dict_list.append(tmp_dict)
+        for pj in pjs:
+            tmp_dict = {}
+            tmp_dict['ctype'] = ctype
+            tmp_dict['obstacle'] = obstacle
+            tmp_dict['pj'] = pj
+            siddon_dict_list.append(tmp_dict)
 
 del tmp_dict, ctype, obstacle
 
