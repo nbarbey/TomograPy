@@ -1,4 +1,8 @@
 setup.py
+AUTHOR
+LICENSE
+LICENCE_FR
+README.rst
 siddon/C_siddon.c.template
 siddon/__init__.py
 siddon/display.py
