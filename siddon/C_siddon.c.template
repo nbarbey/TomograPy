@@ -3,6 +3,9 @@
   and backprojection for tomography applications.
 */
 
+/*============================================================================*/
+/* Header */
+
 #include "Python.h"
 #include "arrayobject.h"
 #include <stdio.h>
@@ -10,35 +13,49 @@
 #include <math.h>
 #include <omp.h>
 
-#define INF 1000000. /* en rayons solaires*/
+/* To avoid division by zero. */
+#define INF 1000000. /* in solar radii*/
+/* Dimension number of the problem. */
 #define NDIM 3 /*number of dimensions*/
 
-#define isNaN(x) ((x) != (x))
-#define SQ(x) ((x) * (x))
-
+/* To allow for multiple data types through templating. */
 #define CTYPE %(ctype)s
 
+/* True if x is a NaN. */
+#define isNaN(x) ((x) != (x))
+/* Power of two. */
+#define SQ(x) ((x) * (x))
+/* Python array indexing. */
 #define IND1(a, i) *((CTYPE *) PyArray_GETPTR1(a, i))
 #define IND2(a, i) *((CTYPE *) PyArray_GETPTR2(a, i[0], i[1]))
 #define IND3(a, i) *((CTYPE *) PyArray_GETPTR3(a, i[0], i[1], i[2]))
-/*#define IND3t(a, i, j) *((CTYPE *) PyArray_GETPTR4(a, i[0], i[1], i[2], j))
-  #define IND4(a, i) *((CTYPE *) PyArray_GETPTR4(a, i[0], i[1], i[2], i[3]))*/
-#define IND3t(a, i, j) *(CTYPE *)(a->data + i[0] * a->strides[0] + i[1] * a->strides[1] + i[2] * a->strides[2] + j * a->strides[3])
-#define IND4(a, i) *(CTYPE *)(a->data + i[0] * a->strides[0] + i[1] * a->strides[1] + i[2] * a->strides[2] + i[3] * a->strides[3])
+#define IND3t(a, i, j) *(CTYPE *)(a->data + i[0] * a->strides[0]	\
+				  + i[1] * a->strides[1]		\
+				  + i[2] * a->strides[2]		\
+				  + j * a->strides[3])
+#define IND4(a, i) *(CTYPE *)(a->data + i[0] * a->strides[0]	\
+			      + i[1] * a->strides[1]		\
+			      + i[2] * a->strides[2]		\
+			      + i[3] * a->strides[3])
 
+/*numpy 2.0 way :*/
+/*
+  #define IND3t(a, i, j) *((CTYPE *) PyArray_GETPTR4(a, i[0], i[1], i[2], j))
+  #define IND4(a, i) *((CTYPE *) PyArray_GETPTR4(a, i[0], i[1], i[2], i[3]))
+*/
 
-/*header */
+/* Structures definitions */
 
 /* define the detector parameters */
 typedef struct
 {
-  /* steps in radians*/
+  /* size of a pixel in radians */
   CTYPE p1;
   CTYPE p2;
   /* size in pixels*/
   uint n1;
   uint n2;
-  /* position of the sun center in pixels (can be a fraction of pixel */
+  /* position of the sun center in pixels (can be a fraction of pixel) */
   CTYPE s1;
   CTYPE s2;
 }detector;
@@ -47,34 +64,38 @@ typedef struct
 typedef struct
 {
   /* spherical coordinates*/
-  CTYPE lon; /* longitude in radians */
-  CTYPE lat; /* latitude in radians */
-  CTYPE rol; /* roll angle in radians (angle between the image vertical and the Sun north pole taken positive clockwise )*/
-  CTYPE d; /* distance in meters */
-  /* cartesian coordinates in carrington */
+  /* longitude in radians */
+  CTYPE lon;
+ /* latitude in radians */
+  CTYPE lat;
+ /* roll angle in radians */
+  CTYPE rol;
+  /* distance to center */
+  CTYPE d;
+  /* cartesian coordinates */
   CTYPE M[NDIM];
 }orbit;
 
-/* define the parameters of the Region of interest of the object */
+/* define the parameters of the "region of interest" of the object */
 typedef struct
 {
-  /*size of the object cube in solar radii */
+  /*size of the object cube */
   CTYPE d[NDIM];
-  /* steps in solar radius : 1 sr = 6.95E8 m */
+  /* size of a pixel in physical dimensions. */
   CTYPE p[NDIM];
   /* size in pixels */
   uint n[NDIM];
-  /* offset in solar radius : position of the firt pixel to center of rotation */
-  /*bounds of the volume in solar radius*/
+  /*bounds of the volume */
   CTYPE min[NDIM];
   CTYPE max[NDIM];
 }RoiO;
 
+/* Functions declarations */
+
 void init_C_siddon%(suffix)s();
 static PyObject *call_siddon%(suffix)s(PyObject *self, PyObject *args);
 
-/* function declaration */
-
+/* Compute integration along the line of sight. */
 inline void trace_ray(CTYPE[NDIM],
 		      CTYPE[NDIM],
 		      PyArrayObject*,
@@ -82,6 +103,7 @@ inline void trace_ray(CTYPE[NDIM],
 		      PyArrayObject*,
 		      RoiO*);
 
+/* Perform computation that can be done outside of the line of sight loop. */
 inline void initialize_raytracing(RoiO *,
 				  CTYPE[NDIM],
 				  CTYPE[NDIM],
@@ -92,6 +114,8 @@ inline void initialize_raytracing(RoiO *,
 				  uint[NDIM],
 				  CTYPE[NDIM]);
 
+
+/* Check if line of sight goes through the map cube. */
 inline void intersect_cube(RoiO * ,
 			   CTYPE [NDIM],
 			   CTYPE [NDIM],
@@ -100,6 +124,7 @@ inline void intersect_cube(RoiO * ,
 			   CTYPE *,
 			   CTYPE *);
 
+/* Update voxel index and perform pj or bpj. */
 inline void voxel(PyArrayObject*,
 		  uint[NDIM],
 		  PyArrayObject*,
@@ -109,25 +134,34 @@ inline void voxel(PyArrayObject*,
 		  CTYPE[NDIM],
 		  int[NDIM]);
 
+/* projection / backprojection of a voxel. */
 inline void pj(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
 inline void bpj(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
+/* projection / backprojection with temporal index */
 inline void pjt(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
 inline void bpjt(PyArrayObject*, uint[NDIM], PyArrayObject*, uint[NDIM], CTYPE);
-
+/* Check if voxel index is inside the cube. */
 inline int in_cube(RoiO, uint[NDIM]);
+/* Check if voxel index is outside a sphere of radius 1. */
 inline int sun(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
+/* Returns always 1. (replace sun if no sun obsactle is required. */
 inline int none(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
-
+/* Minimum or maximum of 3 values. */
 inline CTYPE min3(CTYPE, CTYPE, CTYPE);
 inline CTYPE max3(CTYPE, CTYPE, CTYPE);
+/* Returns 1 if input is positive, -1 if negative and 0 if input equal 0. */
 inline int sign(CTYPE);
+/* Output 2 values after sorting 2 input values. */
 inline void compare(CTYPE*, CTYPE*, CTYPE, CTYPE);
-
+/* Compute a rotation matrix. */
 inline void rotation_matrix(orbit, CTYPE [NDIM][NDIM]);
+/* Define unit vector from spherical coordinates. */
 inline void define_unit_vector(CTYPE, CTYPE, CTYPE[NDIM]);
+/* Apply a rotation matrix to a vector */
 inline void apply_rotation(CTYPE[NDIM][NDIM] , CTYPE[NDIM], CTYPE[NDIM]);
+/* Comupte the distance from the map cube reference pixel (center). */
 inline CTYPE distance_to_center(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
-
+/* Perform projection / backprojection of an image set. */
 inline void Siddon(
 	       PyArrayObject*,
 	       uint,
@@ -137,7 +171,8 @@ inline void Siddon(
 	       detector
 	       );
 
-/*code */
+/*============================================================================*/
+/* Functions code */
 
 static PyMethodDef _C_siddon%(suffix)sMethods[] = {
   {"siddon", call_siddon%(suffix)s, METH_VARARGS},
@@ -225,7 +260,7 @@ static PyObject *call_siddon%(suffix)s(PyObject *self, PyObject *args)
   RoiO.max[1] = RoiO.min[1] + RoiO.d[1];
   RoiO.max[2] = RoiO.min[2] + RoiO.d[2];
   /* Loop on the time / image dimension */
-  #pragma omp parallel shared(RoiO, data, map) private(t, orbit, detector)
+  #pragma omp parallel default(shared) private(t, orbit, detector)
   #pragma omp for
   for(t = 0 ; t < nt ; t++){
     /* define orbit of current image */
@@ -450,25 +485,29 @@ void voxel(PyArrayObject * data,
 }
 
 /* projection update */
-void pj(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDIM], CTYPE d)
+void pj(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
+	uint iv[NDIM], CTYPE d)
 {
   IND3(data, id) += d * IND3(cube, iv);
 }
 
 /* backprojection update*/
-void bpj(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDIM], CTYPE d)
+void bpj(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
+	 uint iv[NDIM], CTYPE d)
 {
   IND3(cube, iv) += d * IND3(data, id);
 }
 
 /* projection with time */
-void pjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDIM], CTYPE d)
+void pjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
+	 uint iv[NDIM], CTYPE d)
 {
   IND3(data, id) += d * IND3t(cube, iv, id[2]);
 }
 
 /* backprojection with time*/
-void bpjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDIM], CTYPE d)
+void bpjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
+	  uint iv[NDIM], CTYPE d)
 {
   IND3t(cube, iv, id[2]) += d * IND3(data, id);
 }
@@ -477,7 +516,9 @@ void bpjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube, uint iv[NDI
 /* check if still in map cube */
 int in_cube(RoiO RoiO, uint iv[NDIM])
 {
-  return iv[0] >= 0 && iv[0] < RoiO.n[0] && iv[1] >= 0 && iv[1] < RoiO.n[1] && iv[2] >= 0 && iv[2] < RoiO.n[2];
+  return (iv[0] >= 0 && iv[0] < RoiO.n[0] 
+	  && iv[1] >= 0 && iv[1] < RoiO.n[1]
+	  && iv[2] >= 0 && iv[2] < RoiO.n[2]);
 }
 
 /* check if the ray has reached the sphere of radius 1 */
