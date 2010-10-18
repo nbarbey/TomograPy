@@ -1,0 +1,13 @@
+setup.py
+siddon/C_siddon.c.template
+siddon/__init__.py
+siddon/display.py
+siddon/lo_wrapper.py
+siddon/models.py
+siddon/parse_templates.py
+siddon/phantom.py
+siddon/secchi.py
+siddon/siddon.py
+siddon/simu.py
+siddon/srt
+siddon/srt_default.cfg
