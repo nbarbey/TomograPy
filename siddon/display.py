@@ -66,7 +66,7 @@ def sinogram(data, r, rsun=False, amin=None, amax=None, n=None, fig=None, **kwar
     sino = np.zeros((n, data.shape[-1]))
     for i in xrange(data.shape[-1]):
         # generate interpolation grid
-        delta_a =  data[i].header.get('SC_ROLL', 0.)
+        delta_a =  data[i].header.get('SC_ROLL', 0.)[i]
         a -= delta_a
         x = r * np.cos(a) + data[i].header['CRPIX1'][i]
         y = r * np.sin(a) + data[i].header['CRPIX2'][i]
