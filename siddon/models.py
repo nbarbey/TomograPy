@@ -60,7 +60,7 @@ def srt(data, cube, **kwargs):
                                             Rmin=data_rmin,
                                             Rmax=data_rmax,
                                             mask_negative=True)
-        Md = lo.decimate(data_mask)
+        Md = lo.mask(data_mask)
         P = Md * P
     else:
         data_mask = None
@@ -104,7 +104,7 @@ def stsrt(data, cube, **kwargs):
     if obj_rmin is not None or obj_rmax is not None:
         Mo, obj_mask = mask_object(cube, kwargs)
         obj_mask = obj_mask.reshape(obj_mask.shape + (1,)).repeat(n, axis=-1)
-        Mo = lo.decimate(obj_mask)
+        Mo = lo.mask(obj_mask)
         P = P * Mo.T
         D = [Di * Mo.T for Di in D]
     else:
@@ -117,7 +117,7 @@ def stsrt(data, cube, **kwargs):
                                             Rmin=data_rmin,
                                             Rmax=data_rmax,
                                             mask_negative=True)
-        Md = lo.decimate(data_mask)
+        Md = lo.mask(data_mask)
         P = Md * P
     else:
         data_mask = None
@@ -130,7 +130,7 @@ def mask_object(cube, kwargs):
         obj_mask = secchi.define_map_mask(cube,
                                           Rmin=obj_rmin,
                                           Rmax=obj_rmax)
-        Mo = lo.decimate(obj_mask)
+        Mo = lo.mask(obj_mask)
     return Mo, obj_mask
 
 def group_sum(ind, cube, data):
