@@ -1,7 +1,25 @@
+import time
 import numpy as np
 from matplotlib import pyplot as plt
 
+def data_movie(data, **kwargs):
+    """
+    Display all images of a data cube as a movie.
+    """
+    fig = plt.figure()
+    n = data.shape[-1]
+    im0 = plt.imshow(data[..., 0], **kwargs)
+    plt.draw()
+    for k in xrange(n):
+        time.sleep(.1)
+        im0.set_data(data[..., k])
+        plt.draw()
+
 def display_object(obj):
+    """
+    Display an object map as an image by concatenating each slice
+    along the third axis.
+    """
     plt.figure()
     n = obj.shape[-1]
     div = _max_divider(n)
