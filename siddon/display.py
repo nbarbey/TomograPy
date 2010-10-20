@@ -28,7 +28,7 @@ def data_movie(data, fig=None, **kwargs):
         im0.set_data(data[..., k])
         plt.draw()
 
-def sinogram(data, r, amin=None, amax=None, n=None, fig=None, **kwargs):
+def sinogram(data, r, rsun=False, amin=None, amax=None, n=None, fig=None, **kwargs):
     """
     Display a sinogram of the data set.
 
@@ -38,6 +38,8 @@ def sinogram(data, r, amin=None, amax=None, n=None, fig=None, **kwargs):
       A data cube. Third dimension should be the image index.
     r: float
       The radius of the circle along which the sinogram is interpolated.
+    rsun: boolean
+      If true, r is the radius relative to the solar radius in the image.
     amin, amax: float (optional)
       Minimal and maximal angle. If not given amin=0 and amax = pi.
     n: int (optional)
@@ -60,14 +62,17 @@ def sinogram(data, r, amin=None, amax=None, n=None, fig=None, **kwargs):
     if n is None:
         n = np.max(data.shape[0:2])
     # interpolat each frame
+    a = np.linspace(amin, amax, n)
     sino = np.zeros((n, data.shape[-1]))
     for i in xrange(data.shape[-1]):
         # generate interpolation grid
-        a = np.linspace(amin, amax, n)
-        x = r * np.cos(a)
-        y = r * np.sin(a)
-        x += data[i].header['CRPIX1'][i]
-        y += data[i].header['CRPIX2'][i]
+        delta_a =  data[i].header.get('SC_ROLL', 0.)
+        a -= delta_a
+        x = r * np.cos(a) + data[i].header['CRPIX1'][i]
+        y = r * np.sin(a) + data[i].header['CRPIX2'][i]
+        if rsun:
+            x /= data[i].header['RSUN'][i]
+            y /= data[i].header['RSUN'][i]
         sino[..., i] = map_coordinates(data[..., i], (x, y))
     # display sinogram
     if fig is None:
