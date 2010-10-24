@@ -41,6 +41,7 @@ Options:
 
   Optimization options:
 
+  --optimizer        Name of optimization routine (from lo).
   --hyperparameters  Hyperparameters of the smoothness prior.
   --maxiter          Maximum iteration number.
   --tol              Tolerance.
@@ -58,7 +59,7 @@ long_options = ["help", "bin=", "time_step=", "time_window=",
                 "naxis=", "crpix=", "cdelt=", "crval=",
                 "obj_rmin=", "obj_rmax=", "data_rmin=", "data_rmax=",
                 "negative",
-                "hyperparameters=", "maxiter=", "tol="]
+                "optimizer=", "hyperparameters=", "maxiter=", "tol="]
 
 def main():
     """Handle config file, options and perform computations accordingly."""
@@ -102,6 +103,7 @@ def main():
     mask_opt["data_rmin"] = config.getfloat("masking", "data_rmin")
     mask_opt["data_rmax"] = config.getfloat("masking", "data_rmax")
     mask_opt["mask_negative"] = config.getboolean("masking", "negative")
+    hypers = config.get("optimization", "optimizer")
     hypers = parse_tuple_float(config.get("optimization", "hyperparameters"))
     maxiter = config.getint("optimization", "maxiter")
     tol = config.getfloat("optimization", "tol")
@@ -151,6 +153,8 @@ def main():
         elif o in ("-n", "--negtative"):
             mask_opt["mask_negative"] = True
         # optimization parameters
+        elif o == "--optimizer":
+            optimizer = a
         elif o == "--hyperparameters":
             hypers = parse_tuple_float(a)
         elif o == "--maxiter":
@@ -184,7 +188,7 @@ def main():
     P, D, obj_mask, data_mask = models.srt(data, obj, **mask_opt)
     # inversion
     b = data[data_mask == 0]
-    sol = lo.quadratic_optimization(P, b, D, hypers, maxiter=maxiter, tol=tol)
+    exec("sol = lo." + optimizer + "(P, b, D, hypers, maxiter=maxiter, tol=tol)")
     # reshape result
     fsol = fa.zeros(obj.shape, header=object_header)
     fsol[obj_mask == 0] = sol.flatten()
