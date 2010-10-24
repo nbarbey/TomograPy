@@ -22,10 +22,10 @@ def data_movie(data, fig=None, **kwargs):
         fig = plt.figure()
     a = fig.gca()
     n = data.shape[-1]
-    im0 = a.imshow(data[..., 0], **kwargs)
+    im0 = a.imshow(data[..., 0].T, **kwargs)
     plt.draw()
     for k in xrange(n):
-        im0.set_data(data[..., k])
+        im0.set_data(data[..., k].T)
         plt.draw()
 
 def sinogram(data, r, amin=-np.pi, amax=np.pi, n=None, fig=None, **kwargs):
