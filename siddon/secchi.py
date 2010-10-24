@@ -37,7 +37,7 @@ def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
             fits_array = fits_array.bin(bin_factor)
             fits_array.header['RSUN'] /= bin_factor
         update_header(fits_array)
-        fits_arrays.append(fits_array)
+        fits_arrays.append(fits_array.T)
     data = fa.infoarrays2infoarray(fits_arrays)
     data = data.astype(dtype)
     return data
