@@ -9,6 +9,9 @@ import siddon
 from lo_wrapper import siddon_lo, siddon4d_lo
 import secchi
 
+# constants
+sigma = 7.940787e-30
+
 def srt(data, cube, **kwargs):
     """
     Define Solar Rotational Tomography model with optional masking of
@@ -154,3 +157,96 @@ def group_sum(ind, cube, data):
             out[..., i:j] = x[..., k].repeat(tmp_shape[-1]).reshape(tmp_shape)
         return out
     return lo.ndoperator(shapein, shapeout, matvec, rmatvec, dtype=np.float64)
+
+# Thomson scattering
+
+def thomson(data, cube, **kwargs):
+    """
+    Defines a Thomson scattering model for white light coronographs.
+
+    Parameters
+    ----------
+    data: 3D InfoArray
+      Data stack.
+    cube: 3D FitsArray
+      Map cube.
+
+    Returns
+    -------
+    T: LinearOperator
+      Thomson scattering projector.
+    """
+    NotImplemented
+
+def _r2omega(r):
+    "Compute the Omega angle knowing r (see Bilings 66 for def)."
+    omega = np.zeros(r.shape)
+    omega = np.arcsin(1. / r)
+    omega[r == 0] = 0
+    return omega
+
+def _impact_parameter(alpha, beta, d):
+    "Impact parameter of a line. Set to 1. if < 1. "
+    from numpy import sin, cos, arccos
+    rho = d * sin(arccos(cos(alpha) * cos(beta)))
+    rho[rho < 1.] = 1.
+    return rho
+
+def _thomson_coef(omega):
+    "Thomson scattering coefficients as defined by Billings."
+    sino = np.sin(omega)
+    sino2 = sino ** 2
+    coso = np.cos(omega)
+    coso2 = coso ** 2
+    lno = np.log((1. + sino) / coso) * (cosp2 / sino)
+    C1 = coso * sino2
+    C2 = - (1. / 8.) * (1. - 3. * sino2 - (1. + 3. * sino2) * lno)
+    C3 = 4. / 3. - coso * (1. + coso2 / 3.)
+    C4 = (1. / 8.) * (5. + sino2 - (5. - sino2) * lno)
+    return C1, C2, C3, C4
+
+def _pb_thomson_coef(omega):
+    """Thomson scattering coefficients as defined by Billings.
+    Computes only the first 2 required for pB model.
+    """
+    sino = np.sin(omega)
+    sino2 = sino ** 2
+    coso = np.cos(omega)
+    coso2 = coso ** 2
+    lno = np.log((1. + sino) / coso) * (cosp2 / sino)
+    C1 = coso * sino2
+    C2 = - (1. / 8.) * (1. - 3. * sino2 - (1. + 3. * sino2) * lno)
+    return C1, C2, C3, C4
+
+def _pb_data_coef(data):
+    """Returns pb coefficients for a data array."""
+    from fitsarray import asfitsarray
+    coefs = np.zeros(data.shape)
+    # loop on images assuming images are on last axis
+    for i in xrange(data.shape[-1]):
+        # get phyiscal coordinates of pixels
+        alpha, beta = asfitsarray(secchi.slice_data(data, i)).axes()
+        Alpha, Beta = np.meshgrid(alpha, beta)
+        # define coefficients as square of impact parameter
+        coefs[..., i] = _impact_parameter(Alpha, Beta, im.header['D']) ** 2
+    return coefs
+
+def _pb_map_coef(my_map, u):
+    """Returns pb map coefficients corresponding to a map array."""
+    from fitsarray import asfitsarray
+    coefs = np.zeros(my_map.shape)
+    x, y, z = asfitsarray(my_map).axes()
+    x2 = x ** 2
+    y2 = y ** 2
+    z2 = z ** 2
+    X2, Y2 = np.meshgrid(x2, y2)
+    # loop on z to avoid memory explosion !
+    for i, z2i in enumerate(z2):
+        R2 = X2 + Y2 + z2i
+        R = np.sqrt(R2)
+        O = _r2omega(R)
+        C1, C2 = _pb_thomson_coef(O)
+        coefs[..., i] = ((1 - u) * C1 + u * C2) / R2
+    # set infinite values due to divide by zero to 0.
+    coefs[1 - np.isfinite(coefs)] = 0.
+    return coefs * np.pi * sigma / 2.
