@@ -488,6 +488,7 @@ void voxel(PyArrayObject * data,
 void pj(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
 	uint iv[NDIM], CTYPE d)
 {
+#pragma omp atomic
   IND3(data, id) += d * IND3(cube, iv);
 }
 
@@ -495,6 +496,7 @@ void pj(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
 void bpj(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
 	 uint iv[NDIM], CTYPE d)
 {
+#pragma omp atomic
   IND3(cube, iv) += d * IND3(data, id);
 }
 
@@ -502,6 +504,7 @@ void bpj(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
 void pjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
 	 uint iv[NDIM], CTYPE d)
 {
+#pragma omp atomic
   IND3(data, id) += d * IND3t(cube, iv, id[2]);
 }
 
@@ -509,6 +512,7 @@ void pjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
 void bpjt(PyArrayObject * data, uint id[NDIM], PyArrayObject * cube,
 	  uint iv[NDIM], CTYPE d)
 {
+#pragma omp atomic
   IND3t(cube, iv, id[2]) += d * IND3(data, id);
 }
 
