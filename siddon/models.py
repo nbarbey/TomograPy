@@ -159,7 +159,6 @@ def group_sum(ind, cube, data):
     return lo.ndoperator(shapein, shapeout, matvec, rmatvec, dtype=np.float64)
 
 # Thomson scattering
-
 def thomson(data, cube, **kwargs):
     """
     Defines a Thomson scattering model for white light coronographs.
@@ -177,6 +176,20 @@ def thomson(data, cube, **kwargs):
       Thomson scattering projector.
     """
     NotImplemented
+
+def pb_thomson_lo(data, in_map, u):
+    """Defines thomson scattering linear operator"""
+    # data coefs
+    data_coefs = _pb_data_coef(data).flatten()
+    O = lo.diag(data_coefs)
+    # map coefs
+    map_coefs = _pb_map_coef(in_map, u).flatten()
+    M = lo.diag(map_coefs)
+    # projection
+    P = siddon_lo(data.header, in_map.header, obstacle="sun")
+    # thomson lo
+    T = O * P * M
+    return T
 
 def _r2omega(r):
     "Compute the Omega angle knowing r (see Bilings 66 for def)."
@@ -198,7 +211,7 @@ def _thomson_coef(omega):
     sino2 = sino ** 2
     coso = np.cos(omega)
     coso2 = coso ** 2
-    lno = np.log((1. + sino) / coso) * (cosp2 / sino)
+    lno = np.log((1. + sino) / coso) * (coso2 / sino)
     C1 = coso * sino2
     C2 = - (1. / 8.) * (1. - 3. * sino2 - (1. + 3. * sino2) * lno)
     C3 = 4. / 3. - coso * (1. + coso2 / 3.)
@@ -213,10 +226,10 @@ def _pb_thomson_coef(omega):
     sino2 = sino ** 2
     coso = np.cos(omega)
     coso2 = coso ** 2
-    lno = np.log((1. + sino) / coso) * (cosp2 / sino)
+    lno = np.log((1. + sino) / coso) * (coso2 / sino)
     C1 = coso * sino2
     C2 = - (1. / 8.) * (1. - 3. * sino2 - (1. + 3. * sino2) * lno)
-    return C1, C2, C3, C4
+    return C1, C2
 
 def _pb_data_coef(data):
     """Returns pb coefficients for a data array."""
@@ -225,7 +238,8 @@ def _pb_data_coef(data):
     # loop on images assuming images are on last axis
     for i in xrange(data.shape[-1]):
         # get phyiscal coordinates of pixels
-        alpha, beta = asfitsarray(secchi.slice_data(data, i)).axes()
+        im = asfitsarray(secchi.slice_data(data, i))
+        alpha, beta = im.axes()
         Alpha, Beta = np.meshgrid(alpha, beta)
         # define coefficients as square of impact parameter
         coefs[..., i] = _impact_parameter(Alpha, Beta, im.header['D']) ** 2
