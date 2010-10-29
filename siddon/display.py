@@ -101,3 +101,32 @@ def _max_divider(n):
         if np.remainder(n, i) == 0:
             divs.append(i)
     return np.max(divs)
+
+# surface interpolations into the object
+
+def extract_surface(obj, r, nlon=360., nlat=180., maxlat=np.pi,
+                    pole="north", proj="equirectangular"):
+    """
+    Interpolate an equirectangular surface into an 3D object map.
+    """
+    from scipy.ndimage import map_coordinates
+    if proj == "equirectangular":
+        # 1d longitude and latitude
+        lon = 2 * np.pi * np.linspace(0, 1, nlon)
+        lat = np.pi * np.linspace(0, 1, nlat) - np.pi / 2.
+        # 2d replicated coordinates
+        Lon, Lat = np.meshgrid(lon, lat)
+        # coordinate change
+        x = r * np.cos(Lat) * np.cos(Lon)
+        y = r * np.cos(Lat) * np.sin(Lon)
+        z = r * np.sin(Lat)
+        # rescale to pixel coordinates
+        h = obj.header
+        x = (x - h['CRVAL1']) / h['CDELT1'] + h['CRPIX1']
+        y = (y - h['CRVAL2']) / h['CDELT2'] + h['CRPIX2']
+        z = (z - h['CRVAL3']) / h['CDELT3'] + h['CRPIX3']
+        out_map = map_coordinates(obj, (x, y, z))
+    elif proj == "gnomon":
+        # not yet implemented
+        pass
+    return out_map
