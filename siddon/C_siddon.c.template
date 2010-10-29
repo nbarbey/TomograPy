@@ -130,7 +130,7 @@ inline void voxel(PyArrayObject*,
 		  PyArrayObject*,
 		  uint[NDIM],
 		  CTYPE[NDIM],
-		  CTYPE,
+		  CTYPE *,
 		  CTYPE[NDIM],
 		  int[NDIM]);
 
@@ -361,7 +361,9 @@ void trace_ray(CTYPE M[3],
     ac = amin;
     /* check if still into the cube and did not reached the obstacles */
     while(in_cube(RoiO, iv) && %(obstacle)s(M, u0, ac))
-      voxel(data, id, cube, iv, D, ac, p, update);
+    {
+      voxel(data, id, cube, iv, D, &ac, p, update);
+    }
   }
 }
 
@@ -441,14 +443,14 @@ void voxel(PyArrayObject * data,
 	   PyArrayObject * cube,
 	   uint iv[NDIM],
 	   CTYPE D[NDIM],
-	   CTYPE ac,
+	   CTYPE * pac,
 	   CTYPE p[NDIM],
 	   int update[NDIM])
 {
   /* check along which dimension is the current intersection */
   if((D[0] <= D[1]) && (D[0] <= D[2]))
   {
-    ac += D[0];
+    *pac += D[0];
     /* projection*/
     %(pj)s(data, id, cube, iv, D[0]);
     /* update voxel subscript */
@@ -460,7 +462,7 @@ void voxel(PyArrayObject * data,
   }
   else if((D[1] < D[0]) && (D[1] <= D[2]))
   {
-    ac += D[1];
+    *pac += D[1];
     /* projection */
     %(pj)s(data, id, cube, iv, D[1]);
     /* update voxel subscript */
@@ -472,7 +474,7 @@ void voxel(PyArrayObject * data,
   }
   else if((D[2] < D[0]) && (D[2] < D[1]))
   {
-    ac += D[2];
+    *pac += D[2];
     /* projection */
     %(pj)s(data, id, cube, iv, D[2]);
     /* update voxel subscript */
