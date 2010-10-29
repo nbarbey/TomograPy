@@ -1,5 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
+from scipy.ndimage import map_coordinates
 
 def data_movie(data, fig=None, **kwargs):
     """
@@ -53,7 +54,6 @@ def sinogram(data, r, amin=-np.pi, amax=np.pi, n=None, fig=None, **kwargs):
     ------
     Returns the sinogram as a ndarray.
     """
-    from scipy.ndimage import map_coordinates
     # handle kwargs
     if n is None:
         n = np.max(data.shape[0:2])
@@ -92,7 +92,7 @@ def display_object(obj):
         j *= obj.shape[1]
         tmp[i:i + obj.shape[0], j:j + obj.shape[1]] = obj[..., k]
     plt.imshow(tmp)
-    plt.show()
+    plt.draw()
 
 def _max_divider(n):
     divmax = np.ceil(np.sqrt(n))
@@ -103,30 +103,141 @@ def _max_divider(n):
     return np.max(divs)
 
 # surface interpolations into the object
+def equirectangular(obj, r=None, nlon=360., nlat=180., maxlat=np.pi, **kwargs):
+    """
+    Equirectangular projection.
+    """
+    # 1d longitude and latitude
+    lon = 2 * np.pi * np.linspace(0, 1, nlon)
+    lat = np.pi * np.linspace(0, 1, nlat) - np.pi / 2.
+    # 2d replicated coordinates
+    Lon, Lat = np.meshgrid(lon, lat)
+    # coordinate change
+    x, y, z = sphe2cart(r, Lon, Lat)
+    # rescale to pixel coordinates
+    x, y, z = phy2pix(obj.header, (x, y, z))
+    # interpolate and return
+    return map_coordinates(obj, (x, y, z))
 
-def extract_surface(obj, r, nlon=360., nlat=180., maxlat=np.pi,
-                    pole="north", proj="equirectangular"):
+def gnomonic(obj, r=None, nlon=360., nlat=180., maxlat=3 * np.pi / 4.,
+             pole="north", **kwargs):
     """
-    Interpolate an equirectangular surface into an 3D object map.
+    Gnomonic projection.
     """
-    from scipy.ndimage import map_coordinates
-    if proj == "equirectangular":
-        # 1d longitude and latitude
-        lon = 2 * np.pi * np.linspace(0, 1, nlon)
-        lat = np.pi * np.linspace(0, 1, nlat) - np.pi / 2.
-        # 2d replicated coordinates
-        Lon, Lat = np.meshgrid(lon, lat)
-        # coordinate change
-        x = r * np.cos(Lat) * np.cos(Lon)
-        y = r * np.cos(Lat) * np.sin(Lon)
-        z = r * np.sin(Lat)
-        # rescale to pixel coordinates
-        h = obj.header
-        x = (x - h['CRVAL1']) / h['CDELT1'] + h['CRPIX1']
-        y = (y - h['CRVAL2']) / h['CDELT2'] + h['CRPIX2']
-        z = (z - h['CRVAL3']) / h['CDELT3'] + h['CRPIX3']
-        out_map = map_coordinates(obj, (x, y, z))
-    elif proj == "gnomon":
-        # not yet implemented
-        pass
-    return out_map
+    # select pole
+    convert_pole = {"north":1, "south":-1}
+    sign = convert_pole[pole]
+    # generate 1d coordinates
+    x = maxlat * np.linspace(-.5, .5, obj.shape[0])
+    y = maxlat * np.linspace(-.5, .5, obj.shape[1])
+    # replicate in 2d.
+    X, Y = np.meshgrid(x, y)
+    lon = np.arctan2(Y, X)
+    lat = sign * (np.pi / 2. - np.sqrt(X ** 2 + Y ** 2))
+    # convert in cartesian coordinates
+    x, y, z = sphe2cart(r, lon, lat)
+    # convert in pixel coordinates
+    x, y, z = phy2pix(obj.header, (x, y, z))
+    # interpolate and return
+    return map_coordinates(obj, (x, y, z))
+
+def orthographic(obj, r=None, **kwargs):
+    """
+    Orthographic projection.
+    """
+    # generate 1d coordinates
+    x = np.linspace(-.5, .5, obj.shape[0])
+    y = np.linspace(-.5, .5, obj.shape[1])
+    # replicate in 2d.
+    X, Y = np.meshgrid(x, y)
+    Z2 = r ** 2 - X ** 2 - Y ** 2
+    # if negative values drop them
+    #goods = np.where(Z2 > 0.)
+    #X = X[goods]
+    #Y = Y[goods]
+    #Z = np.sqrt(Z2[goods])
+    Z = np.sqrt(Z2)
+    # convert in pixel coordinates
+    X, Y, Z = phy2pix(obj.header, (X, Y, Z))
+    # interpolate and return
+    return map_coordinates(obj, (X, Y, Z))
+
+# coordinates transformations
+def sphe2cart(r, lon, lat):
+    """Spherical to cartesian coordinates.
+    """
+    x = r * np.cos(lat) * np.cos(lon)
+    y = r * np.cos(lat) * np.sin(lon)
+    z = r * np.sin(lat)
+    return x, y, z
+
+def phy2pix(header, coords):
+    """Transform physical coordinates into pixel coordinates.
+
+    Arguments
+    ---------
+    header: dict or pyfits.Header
+       A header with CRVAL, CDELT and CRPIX keywords.
+    coords: list of arrays
+       The coordinates stored in an iterable.
+       
+    Returns
+    -------
+    out_coords: list of ndarrays
+      The coordinates in pixels.
+    """
+    h = header
+    out_coords = list()
+    for i, u in enumerate(coords):
+        si = str(i + 1)
+        out_coords.append((u - h['CRVAL' + si]) / h['CDELT' + si] + h['CRPIX' + si])
+    return out_coords
+
+# define the dict of map projections and corresponding name string
+_map_projections = [equirectangular, gnomonic, orthographic]
+
+def _define_map_projections():
+    out = dict()
+    for proj in _map_projections:
+        out[proj.__name__] = proj
+    return out
+
+map_projections = _define_map_projections()
+del _map_projections
+
+# generic surface extraction and display
+def display_surface(obj, proj, title='', xlabel='', ylabel='',
+                    imshow_kwargs=None, **kwargs):
+    """
+    Calls extract surface and imshow.
+    """
+    my_proj = extract_surface(obj, proj, **kwargs)
+    plt.imshow(my_proj, **imshow_kwargs)
+    plt.draw()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    return my_proj
+
+def extract_surface(obj, proj, **kwargs):
+    """
+    Interpolate a surface into an 3D object map according to a projection.
+
+    Arguments
+    ---------
+    obj: FitsArray.
+      A 3d fits array containing the map to interpolate.
+    proj: see display.map_projections
+      The name of the projection to perform.
+    kwargs: keyword arguments
+      The arguments which need to be passed to the projections routines.
+    Returns
+    -------
+    A ndarrray containing the interpolated map.
+    """
+    if isinstance(proj, str):
+        proj = map_projections[proj]
+    if proj in map_projections.values():
+        return proj(obj, **kwargs)
+    else:
+        raise ValueError("projection %s not implemented." % proj )
