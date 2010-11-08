@@ -8,7 +8,7 @@ import numpy as np
 import fitsarray as fa
 
 # constants
-solar_radius = 695000 # in km
+solar_radius = 695000000. # in m
 arcsecond_to_radian = np.pi/648000 #pi/(60*60*180)
 
 # data handling
@@ -44,12 +44,12 @@ def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
 
 def update_header(array):
     # read useful keywords
-    lon = array.header['HEL_LON']
-    lat = array.header['HEL_LAT']
-    rol = np.radians(array.header['SC_ROLL'])
-    x = array.header['HEC_X']
-    y = array.header['HEC_Y']
-    z = array.header['HEC_Z']
+    lon = np.radians(array.header['CRLN_OBS'])
+    lat = np.radians(array.header['CRLT_OBS'])
+    rol = np.radians(array.header['CROTA2'])
+    x = array.header['HAEX_OBS']
+    y = array.header['HAEY_OBS']
+    z = array.header['HAEZ_OBS']
     # infere linked values
     d = np.sqrt(x ** 2 + y ** 2 + z ** 2) / solar_radius
     xd = d * np.cos(lat) * np.cos(lon)
@@ -167,7 +167,7 @@ def define_data_mask(data, Rmin=None, Rmax=None, mask_negative=False):
         if Rmax is None:
             data_mask *= (R > Rmax)
     if mask_negative:
-        data_mask *= data < 0.
+        data_mask *= (data >= 0.)
     return data_mask
 
 def distance_to_sun_center(data):
@@ -188,19 +188,31 @@ def distance_to_sun_center(data):
       RSUN is the radius of the Sun on one image in number of pixels.
     """
     R = np.zeros(data.shape)
+    Rsun = compute_rsun(data)
     # loop on images
     for i in xrange(data.shape[-1]):
         # get axes
-        Rsun = data.header['RSUN'][i]
+        #Rsun = data.header['RSUN'][i]
         crpix1 = data.header['CRPIX1'][i]
         crpix2 = data.header['CRPIX2'][i]
-        x = (np.arange(data.shape[0]) - crpix1) / Rsun
-        y = (np.arange(data.shape[0]) - crpix2) / Rsun
+        y = (np.arange(data.shape[0]) - crpix1) / Rsun[i]
+        x = (np.arange(data.shape[0]) - crpix2) / Rsun[i]
         # generate 2D repeated axes
         X, Y = np.meshgrid(x, y)
         # radius computation
         R[..., i] = np.sqrt(X ** 2 + Y ** 2)
     return R
+
+def compute_rsun(data):
+    rsun = np.empty(data.shape[-1])
+    for i in xrange(data.shape[-1]):
+        d = data.header['D'][i]
+        cdelt1 = data.header['CDELT1'][i]
+        cdelt2 = data.header['CDELT2'][i]
+        if cdelt1 != cdelt2:
+            raise ValueError('Meaningless if cdelts are not equal.')
+        rsun[i] = np.arctan(1. / d) / cdelt1
+    return rsun
 
 def define_map_mask(cube, Rmin=None, Rmax=None):
     """
