@@ -207,7 +207,7 @@ del _map_projections
 
 # generic surface extraction and display
 def display_surface(obj, proj, title='', xlabel='', ylabel='',
-                    imshow_kwargs=None, **kwargs):
+                    imshow_kwargs={}, **kwargs):
     """
     Calls extract surface and imshow.
     """

@@ -7,10 +7,11 @@ import numpy as np
 import lo
 import siddon
 from lo_wrapper import siddon_lo, siddon4d_lo
-import secchi
+import solar
 
 # constants
-sigma = 7.940787e-30
+#sigma = 7.940787e-30
+sigma = 1.
 
 def srt(data, cube, **kwargs):
     """
@@ -40,15 +41,16 @@ def srt(data, cube, **kwargs):
     D : Smoothness priors
 
     """
-    # Parse kwargs.
-    obj_rmin = kwargs.get('obj_rmin', None)
-    obj_rmax = kwargs.get('obj_rmax', None)
-    data_rmin = kwargs.get('data_rmin', None)
-    data_rmax = kwargs.get('data_rmax', None)
-    mask_negative = kwargs.get('mask_negative', None)
     # Model : it is Solar rotational tomography, so obstacle="sun".
     P = siddon_lo(data.header, cube.header, obstacle="sun")
     D = [lo.diff(cube.shape, axis=i) for i in xrange(cube.ndim)]
+    P, D, obj_mask = _apply_object_mask(P, D, cube, **kwargs)
+    P, data_mask = _apply_data_mask(P, data, **kwargs)
+    return P, D, obj_mask, data_mask
+
+def _apply_object_mask(P, D, cube, **kwargs):
+    obj_rmin = kwargs.get('obj_rmin', None)
+    obj_rmax = kwargs.get('obj_rmax', None)
     # Define masking.
     if obj_rmin is not None or obj_rmax is not None:
         Mo, obj_mask = mask_object(cube, kwargs)
@@ -56,18 +58,25 @@ def srt(data, cube, **kwargs):
         D = [Di * Mo.T for Di in D]
     else:
         obj_mask = None
+    return P, D, obj_mask
+
+def _apply_data_mask(P, data, **kwargs):
+    # Parse kwargs.
+    data_rmin = kwargs.get('data_rmin', None)
+    data_rmax = kwargs.get('data_rmax', None)
+    mask_negative = kwargs.get('mask_negative', None)
     if (data_rmin is not None or
         data_rmax is not None or
         mask_negative is not None):
-        data_mask = secchi.define_data_mask(data,
+        data_mask = solar.define_data_mask(data,
                                             Rmin=data_rmin,
                                             Rmax=data_rmax,
-                                            mask_negative=True)
+                                            mask_negative=mask_negative)
         Md = lo.mask(data_mask)
         P = Md * P
     else:
         data_mask = None
-    return P, D, obj_mask, data_mask
+    return P, data_mask
 
 def stsrt(data, cube, **kwargs):
     """
@@ -81,11 +90,11 @@ def stsrt(data, cube, **kwargs):
     data_rmax = kwargs.get('data_rmax', None)
     mask_negative = kwargs.get('mask_negative', False)
     # define temporal groups
-    times = [secchi.convert_time(t) for t in data.header['DATE_OBS']]
+    times = [solar.convert_time(t) for t in data.header['DATE_OBS']]
     ## if no interval is given separate every image
     dt_min = kwargs.get('dt_min', np.max(np.diff(times)) + 1)
-    #groups = secchi.temporal_groups(data, dt_min)
-    ind = secchi.temporal_groups_indexes(data, dt_min)
+    #groups = solar.temporal_groups(data, dt_min)
+    ind = solar.temporal_groups_indexes(data, dt_min)
     n = len(ind)
     # 4d model
     cube_header = cube.header.copy()
@@ -116,7 +125,7 @@ def stsrt(data, cube, **kwargs):
     if (data_rmin is not None or
         data_rmax is not None or
         mask_negative is not None):
-        data_mask = secchi.define_data_mask(data,
+        data_mask = solar.define_data_mask(data,
                                             Rmin=data_rmin,
                                             Rmax=data_rmax,
                                             mask_negative=True)
@@ -130,7 +139,7 @@ def mask_object(cube, kwargs):
     obj_rmin = kwargs.get('obj_rmin', None)
     obj_rmax = kwargs.get('obj_rmax', None)
     if obj_rmin is not None or obj_rmax is not None:
-        obj_mask = secchi.define_map_mask(cube,
+        obj_mask = solar.define_map_mask(cube,
                                           Rmin=obj_rmin,
                                           Rmax=obj_rmax)
         Mo = lo.mask(obj_mask)
@@ -159,7 +168,7 @@ def group_sum(ind, cube, data):
     return lo.ndoperator(shapein, shapeout, matvec, rmatvec, dtype=np.float64)
 
 # Thomson scattering
-def thomson(data, cube, **kwargs):
+def thomson(data, cube, u=.5, **kwargs):
     """
     Defines a Thomson scattering model for white light coronographs.
 
@@ -175,7 +184,18 @@ def thomson(data, cube, **kwargs):
     T: LinearOperator
       Thomson scattering projector.
     """
-    NotImplemented
+    # projector
+    pb = kwargs.get('pb', 'pb')
+    if pb == 'pb':
+        P = pb_thomson_lo(data, cube, u)
+    else:
+        raise ValueError('Only pb implemented for now.')
+    # priors
+    D = [lo.diff(cube.shape, axis=i) for i in xrange(cube.ndim)]
+    # masks
+    P, D, obj_mask = _apply_object_mask(P, D, cube, **kwargs)
+    P, data_mask = _apply_data_mask(P, data, **kwargs)
+    return P, D, obj_mask, data_mask
 
 def pb_thomson_lo(data, in_map, u):
     """Defines thomson scattering linear operator"""
@@ -238,7 +258,7 @@ def _pb_data_coef(data):
     # loop on images assuming images are on last axis
     for i in xrange(data.shape[-1]):
         # get phyiscal coordinates of pixels
-        im = asfitsarray(secchi.slice_data(data, i))
+        im = asfitsarray(solar.slice_data(data, i))
         alpha, beta = im.axes()
         Alpha, Beta = np.meshgrid(alpha, beta)
         # define coefficients as square of impact parameter

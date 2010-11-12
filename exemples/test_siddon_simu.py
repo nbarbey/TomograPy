@@ -12,14 +12,15 @@ obj = siddon.simu.object_from_header(header)
 obj[:] = siddon.phantom.shepp_logan(obj.shape)
 #obj[:] = 1.
 # data 
-image_header = {'n_images':10,
+image_header = {'n_images':17,
                 'SIMPLE':True, 'BITPIX':-64,
                 'NAXIS1':128, 'NAXIS2':128,
                 'CRPIX1':64, 'CRPIX2':64,
-                'CDELT1':6e-5, 'CDELT2':6e-5,
+                'CDELT1':12e-5, 'CDELT2':12e-5,
                 'CRVAL1':0., 'CRVAL2':0.,
                 }
 image_header['radius'] = 200.
+image_header['max_lon'] = np.pi
 data = siddon.simu.circular_trajectory_data(**image_header)
 data[:] = np.zeros(data.shape)
 # projection

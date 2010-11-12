@@ -220,16 +220,3 @@ def dataarray_from_header(header):
     shape += len(header['NAXIS']),
     dtype = fa.bitpix[str(int(header['BITPIX'][0]))]
     return fa.InfoArray(shape, header=header, dtype=dtype)
-
-def update_header(array):
-    """
-    Update header to add siddon required keywords and convert to
-    appropriate units.
-    """
-    instrume = array.header.get('INSTRUME')
-    if instrume is None:
-        raise ValueError('array header does not have an INSTRUME keyword')
-    if instrume == 'SECCHI':
-        siddon.secchi.update_header(array)
-    else:
-        raise ValueError('Instrument ' + instrume + ' not yet handled')

@@ -8,7 +8,7 @@ import numpy as np
 import fitsarray as fa
 
 # constants
-solar_radius = 695000 # in km
+solar_radius = 695000000. # in m
 arcsecond_to_radian = np.pi/648000 #pi/(60*60*180)
 
 # data handling
@@ -30,26 +30,44 @@ def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
     fnames = os.listdir(path)
     files = [pyfits.fitsopen(os.path.join(path, fname))[0] for fname in fnames]
     files = filter_files(files, **kargs)
-    fits_arrays = list()
-    for f in files:
+    for i, f in enumerate(files):
         fits_array = fa.hdu2fitsarray(f)
         if bin_factor is not None:
             fits_array = fits_array.bin(bin_factor)
-            fits_array.header['RSUN'] /= bin_factor
         update_header(fits_array)
-        fits_arrays.append(fits_array.T)
-    data = fa.infoarrays2infoarray(fits_arrays)
+        fits_array = fits_array.T
+        if i == 0:
+            data = fa.InfoArray(fits_array.shape + (len(files),), header=dict(fits_array.header))
+            for k in data.header.keys():
+                if np.isscalar(data.header[k]):
+                    data.header[k] = np.asarray((data.header[k], ))
+        data[..., i] = fits_array
+        if i != 0:
+            for k in fits_array.header.keys():
+                if np.isscalar(fits_array.header[k]):
+                    data.header[k] = np.concatenate([data.header[k], np.asarray((fits_array.header[k], ))])
+                else:
+                    data.header[k] = np.concatenate([data.header[k], fits_array.header[k]])
     data = data.astype(dtype)
     return data
 
 def update_header(array):
     # read useful keywords
-    lon = array.header['HEL_LON']
-    lat = array.header['HEL_LAT']
-    rol = np.radians(array.header['SC_ROLL'])
-    x = array.header['HEC_X']
-    y = array.header['HEC_Y']
-    z = array.header['HEC_Z']
+    lon = np.radians(array.header['CRLN_OBS'])
+    lat = np.radians(array.header['CRLT_OBS'])
+    rol = np.radians(array.header['CROTA2'])
+    try:
+        x = array.header['HAEX_OBS']
+    except(KeyError):
+        x = array.header['HAEX']
+    try:
+        y = array.header['HAEY_OBS']
+    except(KeyError):
+        y = array.header['HAEY']
+    try:
+        z = array.header['HAEZ_OBS']
+    except(KeyError):
+        z = array.header['HAEZ']
     # infere linked values
     d = np.sqrt(x ** 2 + y ** 2 + z ** 2) / solar_radius
     xd = d * np.cos(lat) * np.cos(lon)
@@ -167,7 +185,7 @@ def define_data_mask(data, Rmin=None, Rmax=None, mask_negative=False):
         if Rmax is None:
             data_mask *= (R > Rmax)
     if mask_negative:
-        data_mask *= data < 0.
+        data_mask *= (data >= 0.)
     return data_mask
 
 def distance_to_sun_center(data):
@@ -188,19 +206,30 @@ def distance_to_sun_center(data):
       RSUN is the radius of the Sun on one image in number of pixels.
     """
     R = np.zeros(data.shape)
+    Rsun = compute_rsun(data)
     # loop on images
     for i in xrange(data.shape[-1]):
         # get axes
-        Rsun = data.header['RSUN'][i]
         crpix1 = data.header['CRPIX1'][i]
         crpix2 = data.header['CRPIX2'][i]
-        x = (np.arange(data.shape[0]) - crpix1) / Rsun
-        y = (np.arange(data.shape[0]) - crpix2) / Rsun
+        y = (np.arange(data.shape[0]) - crpix1) / Rsun[i]
+        x = (np.arange(data.shape[0]) - crpix2) / Rsun[i]
         # generate 2D repeated axes
         X, Y = np.meshgrid(x, y)
         # radius computation
         R[..., i] = np.sqrt(X ** 2 + Y ** 2)
     return R
+
+def compute_rsun(data):
+    rsun = np.empty(data.shape[-1])
+    for i in xrange(data.shape[-1]):
+        d = data.header['D'][i]
+        cdelt1 = data.header['CDELT1'][i]
+        cdelt2 = data.header['CDELT2'][i]
+        if cdelt1 != cdelt2:
+            raise ValueError('Meaningless if cdelts are not equal.')
+        rsun[i] = np.arctan(1. / d) / cdelt1
+    return rsun
 
 def define_map_mask(cube, Rmin=None, Rmax=None):
     """

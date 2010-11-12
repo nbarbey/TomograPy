@@ -3,10 +3,10 @@ import os
 import time
 import lo
 import siddon
-from siddon.secchi import read_data
+from siddon.solar import read_data
 # data
 obsrvtry = ('STEREO_A', 'STEREO_B')
-data = siddon.secchi.concatenate(
+data = siddon.solar.concatenate(
     [read_data(os.path.join(os.getenv('HOME'), 'data', 'siddon', '171dec08'), 
                bin_factor=16,
                obsrvtry=obs,
@@ -15,7 +15,7 @@ data = siddon.secchi.concatenate(
                time_step= 4 * 3600.
                )
      for obs in obsrvtry])
-data = siddon.secchi.sort_data_array(data)
+data = siddon.solar.sort_data_array(data)
 # make sure it is 64 bits data
 data.header['BITPIX'][:] = -64
 # cube
