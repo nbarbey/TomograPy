@@ -66,7 +66,7 @@ def main():
     import os, getopt, sys, ConfigParser
     import lo, siddon
     import fitsarray as fa
-    import secchi, models
+    import solar, models
 
     # parse command line arguments
     try:
@@ -172,13 +172,13 @@ def main():
     for instr in instrume:
         for obs in obsrvtry:
             for det in detector:
-                data.append(secchi.read_data(path,
+                data.append(solar.read_data(path,
                                              instrume=instr,
                                              obsrvtry=obs,
                                              detector=det,
                                              **data_params))
-    data = secchi.concatenate(data)
-    data = secchi.sort_data_array(data)
+    data = solar.concatenate(data)
+    data = solar.sort_data_array(data)
     # enforce 64 bits data XXX
     data.header["BITPIX"][:] = -64
     # cube

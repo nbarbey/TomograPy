@@ -7,7 +7,7 @@ import numpy as np
 import lo
 import siddon
 from lo_wrapper import siddon_lo, siddon4d_lo
-import secchi
+import solar
 
 # constants
 #sigma = 7.940787e-30
@@ -68,7 +68,7 @@ def _apply_data_mask(P, data, **kwargs):
     if (data_rmin is not None or
         data_rmax is not None or
         mask_negative is not None):
-        data_mask = secchi.define_data_mask(data,
+        data_mask = solar.define_data_mask(data,
                                             Rmin=data_rmin,
                                             Rmax=data_rmax,
                                             mask_negative=mask_negative)
@@ -90,11 +90,11 @@ def stsrt(data, cube, **kwargs):
     data_rmax = kwargs.get('data_rmax', None)
     mask_negative = kwargs.get('mask_negative', False)
     # define temporal groups
-    times = [secchi.convert_time(t) for t in data.header['DATE_OBS']]
+    times = [solar.convert_time(t) for t in data.header['DATE_OBS']]
     ## if no interval is given separate every image
     dt_min = kwargs.get('dt_min', np.max(np.diff(times)) + 1)
-    #groups = secchi.temporal_groups(data, dt_min)
-    ind = secchi.temporal_groups_indexes(data, dt_min)
+    #groups = solar.temporal_groups(data, dt_min)
+    ind = solar.temporal_groups_indexes(data, dt_min)
     n = len(ind)
     # 4d model
     cube_header = cube.header.copy()
@@ -125,7 +125,7 @@ def stsrt(data, cube, **kwargs):
     if (data_rmin is not None or
         data_rmax is not None or
         mask_negative is not None):
-        data_mask = secchi.define_data_mask(data,
+        data_mask = solar.define_data_mask(data,
                                             Rmin=data_rmin,
                                             Rmax=data_rmax,
                                             mask_negative=True)
@@ -139,7 +139,7 @@ def mask_object(cube, kwargs):
     obj_rmin = kwargs.get('obj_rmin', None)
     obj_rmax = kwargs.get('obj_rmax', None)
     if obj_rmin is not None or obj_rmax is not None:
-        obj_mask = secchi.define_map_mask(cube,
+        obj_mask = solar.define_map_mask(cube,
                                           Rmin=obj_rmin,
                                           Rmax=obj_rmax)
         Mo = lo.mask(obj_mask)
@@ -258,7 +258,7 @@ def _pb_data_coef(data):
     # loop on images assuming images are on last axis
     for i in xrange(data.shape[-1]):
         # get phyiscal coordinates of pixels
-        im = asfitsarray(secchi.slice_data(data, i))
+        im = asfitsarray(solar.slice_data(data, i))
         alpha, beta = im.axes()
         Alpha, Beta = np.meshgrid(alpha, beta)
         # define coefficients as square of impact parameter
