@@ -22,6 +22,7 @@ image_header = {'n_images':60,
                 'CRVAL1':0., 'CRVAL2':0.,
                 }
 image_header['radius'] = 200.
+image_header['max_lon'] = np.pi
 data = siddon.simu.circular_trajectory_data(**image_header)
 data[:] = np.zeros(data.shape)
 # projector
@@ -45,10 +46,7 @@ hypers = 1e-2 * np.ones(3)
 #Ds, hypers = [], []
 # inversion using scipy.sparse.linalg
 t = time.time()
-tol = 1e-5
-sol, info = lo.rls(P, y, Ds, hypers,  maxiter=100, tol=tol)
+tol = 1e-6
+sol = lo.acg(P, y, Ds, hypers,  maxiter=100, tol=tol)
 sol = sol.reshape(bpj.shape)
-if info != 0:
-    print("Inversion algorithm did not converge to " + str(tol))
-
 print("inversion time : " + str(time.time() - t))

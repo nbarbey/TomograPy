@@ -13,7 +13,7 @@ path = os.path.join(os.getenv('HOME'), 'data', 'siddon', 'cor1')
 #instrume = 'LASCO   '
 time_window = ['2009/09/01 00:00:00.000', '2009/09/15 00:00:00.000']
 time_step = 8 * 3600. # one image every time_step seconds
-data = siddon.secchi.read_data(path, bin_factor=8,
+data = siddon.solar.read_data(path, bin_factor=8,
                                #time_window=time_window, 
                                #time_step=time_step
                                )
@@ -48,7 +48,7 @@ P, D, obj_mask, data_mask = siddon.models.thomson(data, cube, u, **kwargs)
 # bpj
 b = data.flatten()
 bpj = (P.T * b).reshape(cube.shape)
-hypers = np.ones(3)
+hypers = 1e3 * np.ones(3)
 sol = lo.acg(P, b, D, hypers, maxiter=100, tol=1e-6)
 print("inversion time : %f" % (time.time() - t))
 # reshape solution
