@@ -598,9 +598,9 @@ int none(CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE ac)
 
 CTYPE min3(CTYPE x, CTYPE y, CTYPE z)
 {
-  if((x < y)&(x < z))
+  if ((x < y) && (x < z))
     return x;
-  else if ((y < x)&(y < z))
+  else if ((y <= x) && (y < z))
     return y;
   else
     return z;
@@ -608,9 +608,9 @@ CTYPE min3(CTYPE x, CTYPE y, CTYPE z)
 
 CTYPE max3(CTYPE x, CTYPE y, CTYPE z)
 {
-  if((x > y)&(x > z))
+  if ((x > y) && (x > z))
     return x;
-  else if ((y > x)&(y > z))
+  else if ((y >= x) && (y > z))
     return y;
   else
     return z;
