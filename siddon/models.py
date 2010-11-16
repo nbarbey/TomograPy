@@ -69,9 +69,9 @@ def _apply_data_mask(P, data, **kwargs):
         data_rmax is not None or
         mask_negative is not None):
         data_mask = solar.define_data_mask(data,
-                                            Rmin=data_rmin,
-                                            Rmax=data_rmax,
-                                            mask_negative=mask_negative)
+                                           Rmin=data_rmin,
+                                           Rmax=data_rmax,
+                                           mask_negative=mask_negative)
         Md = lo.mask(data_mask)
         P = Md * P
     else:
@@ -128,7 +128,7 @@ def stsrt(data, cube, **kwargs):
         data_mask = solar.define_data_mask(data,
                                             Rmin=data_rmin,
                                             Rmax=data_rmax,
-                                            mask_negative=True)
+                                            mask_negative=mask_negative)
         Md = lo.mask(data_mask)
         P = Md * P
     else:
