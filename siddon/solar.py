@@ -1,5 +1,5 @@
 """
-Code specific to the SECCHI instrument of the STEREO mission
+Generic code for WCS compatible data.
 """
 import os
 import time
@@ -185,7 +185,7 @@ def define_data_mask(data, Rmin=None, Rmax=None, mask_negative=False):
         if Rmax is None:
             data_mask *= (R > Rmax)
     if mask_negative:
-        data_mask *= (data >= 0.)
+        data_mask *= (data < 0.)
     return data_mask
 
 def distance_to_sun_center(data):
