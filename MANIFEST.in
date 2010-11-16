@@ -1,1 +1,1 @@
-recursive-include siddon *.h
+siddon/C_siddon.c.template
