@@ -448,7 +448,7 @@ void voxel(PyArrayObject * data,
 	   int update[NDIM])
 {
   /* check along which dimension is the current intersection */
-  if((D[0] <= D[1]) && (D[0] <= D[2]))
+  if((D[0] < D[1]) && (D[0] < D[2]))
   {
     *pac += D[0];
     /* projection*/
@@ -460,7 +460,7 @@ void voxel(PyArrayObject * data,
     D[2] -= D[0];
     D[0] = fabs(p[0]);
   }
-  else if((D[1] < D[0]) && (D[1] <= D[2]))
+  else if((D[1] < D[0]) && (D[1] < D[2]))
   {
     *pac += D[1];
     /* projection */
@@ -482,6 +482,61 @@ void voxel(PyArrayObject * data,
     /* update distances to next intersections*/
     D[0] -= D[2];
     D[1] -= D[2];
+    D[2] = fabs(p[2]);
+  }
+  /* case in which two directions need to be updated at the same time. */
+  else if((D[0] == D[1]) && (D[0] < D[2]))
+  {
+    *pac += D[0];
+    /* projection */
+    %(pj)s(data, id, cube, iv, D[0]);
+    /* update voxel subscript */
+    iv[0] += update[0];
+    iv[1] += update[1];
+    /* update distances to next intersections*/
+    D[2] -= D[0];
+    D[0] = fabs(p[0]);
+    D[1] = fabs(p[1]);
+  }
+  else if((D[1] == D[2]) && (D[1] < D[0]))
+  {
+    *pac += D[1];
+    /* projection */
+    %(pj)s(data, id, cube, iv, D[1]);
+    /* update voxel subscript */
+    iv[1] += update[1];
+    iv[2] += update[2];
+    /* update distances to next intersections*/
+    D[0] -= D[1];
+    D[1] = fabs(p[1]);
+    D[2] = fabs(p[2]);
+  }
+  else if((D[0] == D[2]) && (D[0] < D[1]))
+  {
+    *pac += D[0];
+    /* projection */
+    %(pj)s(data, id, cube, iv, D[0]);
+    /* update voxel subscript */
+    iv[0] += update[0];
+    iv[2] += update[2];
+    /* update distances to next intersections*/
+    D[1] -= D[0];
+    D[0] = fabs(p[0]);
+    D[2] = fabs(p[2]);
+  }
+  /* finally all directions updated */
+  else if((D[0] == D[1]) && (D[0] == D[2]))
+  {
+    *pac += D[0];
+    /* projection */
+    %(pj)s(data, id, cube, iv, D[0]);
+    /* update voxel subscript */
+    iv[0] += update[0];
+    iv[1] += update[1];
+    iv[2] += update[2];
+    /* update distances to next intersections*/
+    D[0] = fabs(p[0]);
+    D[1] = fabs(p[1]);
     D[2] = fabs(p[2]);
   }
 }

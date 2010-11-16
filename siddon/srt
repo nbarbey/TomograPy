@@ -3,6 +3,7 @@
 """
 Performs Solar Rotational Tomography from the command line.
 """
+from models import srt, stsrt, thomson
 
 def usage():
     print(__usage__)
@@ -41,6 +42,7 @@ Options:
 
   Optimization options:
 
+  --model            Linear model to use for the inversion.
   --optimizer        Name of optimization routine (from lo).
   --hyperparameters  Hyperparameters of the smoothness prior.
   --maxiter          Maximum iteration number.
@@ -48,6 +50,7 @@ Options:
 
   Other options
 
+  --input            Optional input filename for starting point.
   --output           Output filename (default: srt.fts).
 
 """
@@ -59,7 +62,10 @@ long_options = ["help", "bin=", "time_step=", "time_window=",
                 "naxis=", "crpix=", "cdelt=", "crval=",
                 "obj_rmin=", "obj_rmax=", "data_rmin=", "data_rmax=",
                 "negative",
-                "optimizer=", "hyperparameters=", "maxiter=", "tol="]
+                "model=", "optimizer=", "hyperparameters=", "maxiter=", "tol=",
+                "input=", "output="]
+
+model_dict = {"srt":srt, "stsrt":stsrt, "thomson":thomson}
 
 def main():
     """Handle config file, options and perform computations accordingly."""
@@ -103,7 +109,8 @@ def main():
     mask_opt["data_rmin"] = config.getfloat("masking", "data_rmin")
     mask_opt["data_rmax"] = config.getfloat("masking", "data_rmax")
     mask_opt["mask_negative"] = config.getboolean("masking", "negative")
-    hypers = config.get("optimization", "optimizer")
+    model = model_dict[config.get("optimization", "model")]
+    optimizer = config.get("optimization", "optimizer")
     hypers = parse_tuple_float(config.get("optimization", "hyperparameters"))
     maxiter = config.getint("optimization", "maxiter")
     tol = config.getfloat("optimization", "tol")
@@ -153,8 +160,10 @@ def main():
         elif o in ("-n", "--negtative"):
             mask_opt["mask_negative"] = True
         # optimization parameters
+        elif o == "--model":
+            model = model_dict[a]
         elif o == "--optimizer":
-            optimizer = a
+            optimizer = optimize_dict[a]
         elif o == "--hyperparameters":
             hypers = parse_tuple_float(a)
         elif o == "--maxiter":
@@ -162,6 +171,8 @@ def main():
         elif o == "--tol":
             tol = float(a)
         # other parameters
+        elif o in ("--input"):
+            x0 = a
         elif o in ("-o", "--output"):
             output = a
         else:
@@ -185,10 +196,10 @@ def main():
     object_header = make_object_header(naxis, crpix, cdelt, crval)
     obj = fa.fitsarray_from_header(object_header)
     # model
-    P, D, obj_mask, data_mask = models.srt(data, obj, **mask_opt)
+    P, D, obj_mask, data_mask = model(data, obj, **mask_opt)
     # inversion
     b = data[data_mask == 0]
-    exec("sol = lo." + optimizer + "(P, b, D, hypers, maxiter=maxiter, tol=tol)")
+    exec("sol = " + optimizer + "(P, b, D, hypers, maxiter=maxiter, tol=tol)")
     # reshape result
     fsol = fa.zeros(obj.shape, header=object_header)
     fsol[obj_mask == 0] = sol.flatten()
