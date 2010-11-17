@@ -133,7 +133,8 @@ def stsrt(data, cube, **kwargs):
         P = Md * P
     else:
         data_mask = None
-    return P, D, obj_mask, data_mask, cube4
+    cube = cube4
+    return P, D, obj_mask, data_mask
 
 def mask_object(cube, kwargs):
     obj_rmin = kwargs.get('obj_rmin', None)
