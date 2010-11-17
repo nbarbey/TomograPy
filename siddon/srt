@@ -86,7 +86,8 @@ def main():
     script_path = sys.path[0]
     config_file = os.path.join(script_path, "srt_default.cfg")
     data_params = dict()
-    mask_opt = dict()
+    mask_params = dict()
+    opt_params = dict()
     mask_negative = False
     output = "srt.fts"
     # parse config file
@@ -95,9 +96,9 @@ def main():
             config_file = a
     config = ConfigParser.RawConfigParser()
     config.read(config_file)
-    instrume = parse_tuple(config.get("data", "instrument"))
-    obsrvtry = parse_tuple(config.get("data", "observatory"))
-    detector = parse_tuple(config.get("data", "detector"))
+    data_params["instrume"] = parse_tuple(config.get("data", "instrument"))
+    data_params["obsrvtry"] = parse_tuple(config.get("data", "observatory"))
+    data_params["detector"] = parse_tuple(config.get("data", "detector"))
     data_params["bin_factor"] = config.getint("data", "bin")
     data_params["time_step"] = config.getfloat("data", "time_step")
     data_params["time_window"] = parse_tuple(config.get("data", "time_window"))
@@ -105,16 +106,16 @@ def main():
     crpix = parse_tuple_float(config.get("object", "crpix"))
     cdelt = parse_tuple_float(config.get("object", "cdelt"))
     crval = parse_tuple_float(config.get("object", "crval"))
-    mask_opt["obj_rmin"] = config.getfloat("masking", "obj_rmin")
-    mask_opt["obj_rmax"] = config.getfloat("masking", "obj_rmax")
-    mask_opt["data_rmin"] = config.getfloat("masking", "data_rmin")
-    mask_opt["data_rmax"] = config.getfloat("masking", "data_rmax")
-    mask_opt["mask_negative"] = config.getboolean("masking", "negative")
-    model = model_dict[config.get("optimization", "model")]
-    optimizer = config.get("optimization", "optimizer")
-    hypers = parse_tuple_float(config.get("optimization", "hyperparameters"))
-    maxiter = config.getint("optimization", "maxiter")
-    tol = config.getfloat("optimization", "tol")
+    mask_params["obj_rmin"] = config.getfloat("masking", "obj_rmin")
+    mask_params["obj_rmax"] = config.getfloat("masking", "obj_rmax")
+    mask_params["data_rmin"] = config.getfloat("masking", "data_rmin")
+    mask_params["data_rmax"] = config.getfloat("masking", "data_rmax")
+    mask_params["mask_negative"] = config.getboolean("masking", "negative")
+    opt_params["model"] = model_dict[config.get("optimization", "model")]
+    opt_params["optimizer"] = config.get("optimization", "optimizer")
+    opt_params["hypers"] = parse_tuple_float(config.get("optimization", "hyperparameters"))
+    opt_params["maxiter"] = config.getint("optimization", "maxiter")
+    opt_params["tol"] = config.getfloat("optimization", "tol")
     # parse arguments
     if len(args) == 0:
         usage()
@@ -135,11 +136,11 @@ def main():
         elif o in ("-w", "--time_window"):
             data_params["time_window"] = parse_tuple(a)
         elif o in ("-i", "--instrument"):
-            instrume = parse_tuple(a)
+            data_params["instrume"] = parse_tuple(a)
         elif o in ("-o", "--observatory"):
-            obsrvtry = parse_tuple(a)
+            data_params["obsrvtry"] = parse_tuple(a)
         elif o in ("-d", "--detector"):
-            detector = parse_tuple(a)
+            data_params["detector"] = parse_tuple(a)
         # object parameters
         elif o == "--naxis":
             naxis = parse_tuple_int(a)
@@ -151,29 +152,29 @@ def main():
             crval = parse_tuple_float(a)
         # masking parameters
         elif o == "--obj_rmin":
-            mask_opt["obj_rmin"] = float(a)
+            mask_params["obj_rmin"] = float(a)
         elif o == "--obj_rmax":
-            mask_opt["obj_rmax"] = float(a)
+            mask_params["obj_rmax"] = float(a)
         elif o == "--data_rmin":
-            mask_opt["data_rmin"] = float(a)
+            mask_params["data_rmin"] = float(a)
         elif o == "--data_rmax":
-            mask_opt["data_rmax"] = float(a)
+            mask_params["data_rmax"] = float(a)
         elif o in ("-n", "--negtative"):
-            mask_opt["mask_negative"] = True
+            mask_params["mask_negative"] = True
         # optimization parameters
         elif o == "--model":
-            model = model_dict[a]
+            opt_params["model"] = model_dict[a]
         elif o == "--optimizer":
-            optimizer = optimize_dict[a]
+            opt_params["optimizer"] = optimize_dict[a]
         elif o == "--hyperparameters":
-            hypers = parse_tuple_float(a)
+            opt_params["hypers"] = parse_tuple_float(a)
         elif o == "--maxiter":
-            maxiter = int(a)
+            opt_params["maxiter"] = int(a)
         elif o == "--tol":
-            tol = float(a)
-        # other parameters
+            opt_params["tol"] = float(a)
         elif o in ("--input"):
-            x0 = a
+            opt_params["input"] = a
+        # other parameters
         elif o in ("-o", "--output"):
             output = a
         elif o == "--config":
@@ -183,31 +184,48 @@ def main():
 
     # data
     data = list()
-    for instr in instrume:
-        for obs in obsrvtry:
-            for det in detector:
-                data.append(solar.read_data(path,
-                                             instrume=instr,
-                                             obsrvtry=obs,
-                                             detector=det,
-                                             **data_params))
+    for instr in data_params["instrume"]:
+        for obs in data_params["obsrvtry"]:
+            for det in data_params["detector"]:
+                data.append(solar.read_data(path, **data_params))
     data = solar.concatenate(data)
     data = solar.sort_data_array(data)
     # enforce 64 bits data XXX
     data.header["BITPIX"][:] = -64
-    # cube
+    # create object
     object_header = make_object_header(naxis, crpix, cdelt, crval)
     obj = fa.fitsarray_from_header(object_header)
+    # configuration persistency
+    out_header = persistency_header(obj.header, data_params,
+                                       mask_params, opt_params)
+    # pop optimization parameters
+    model = opt_params.pop("model")
+    optimizer = opt_params.pop("optimizer")
+    hypers = opt_params.pop("hypers")
+    if opt_params.has_key("input"):
+        opt_params["x0"] = fa.FitsArray(file=opt_params["input"])
     # model
-    P, D, obj_mask, data_mask = model(data, obj, **mask_opt)
+    P, D, obj_mask, data_mask = model(data, obj, **mask_params)
     # inversion
-    b = data[data_mask == 0]
-    exec("sol = lo." + optimizer + "(P, b, D, hypers, maxiter=maxiter, tol=tol)")
+    b = data.ravel()
+    exec("sol = lo." + optimizer + "(P, b, D, hypers, **opt_params)")
     # reshape result
-    fsol = fa.zeros(obj.shape, header=object_header)
-    fsol[obj_mask == 0] = sol.flatten()
-    fsol.tofits(output)
-    return None
+    sol = fa.asfitsarray(sol.reshape(obj_mask.shape), header=out_header)
+    sol.tofits(output)
+
+def persistency_header(object_header, data_params, mask_params, opt_params):
+    import fitsarray as fa
+    # get full parameters dict for persistency
+    full_params = dict(data_params, **mask_params)
+    full_params.update(opt_params)
+    full_params_str = dict()
+    for k in full_params:
+        full_params_str[k[:8]] = full_params[k].__str__()
+    # save configuration to object header
+    out_header = dict(object_header)
+    out_header.update(full_params_str)
+    out_header = fa.dict2header(out_header)
+    return out_header
 
 def parse_tuple(my_str):
     """
