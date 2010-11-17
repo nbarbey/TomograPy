@@ -86,9 +86,6 @@ def stsrt(data, cube, **kwargs):
     # Parse kwargs.
     obj_rmin = kwargs.get('obj_rmin', None)
     obj_rmax = kwargs.get('obj_rmax', None)
-    data_rmin = kwargs.get('data_rmin', None)
-    data_rmax = kwargs.get('data_rmax', None)
-    mask_negative = kwargs.get('mask_negative', False)
     # define temporal groups
     times = [solar.convert_time(t) for t in data.header['DATE_OBS']]
     ## if no interval is given separate every image
@@ -122,18 +119,7 @@ def stsrt(data, cube, **kwargs):
     else:
         obj_mask = None
     # mask data
-    if (data_rmin is not None or
-        data_rmax is not None or
-        mask_negative is not None):
-        data_mask = solar.define_data_mask(data,
-                                            Rmin=data_rmin,
-                                            Rmax=data_rmax,
-                                            mask_negative=mask_negative)
-        Md = lo.mask(data_mask)
-        P = Md * P
-    else:
-        data_mask = None
-    cube = cube4
+    P, data_mask = _apply_data_mask(P, data, **kwargs)
     return P, D, obj_mask, data_mask
 
 def mask_object(cube, kwargs):
