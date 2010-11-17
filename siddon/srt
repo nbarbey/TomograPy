@@ -57,7 +57,7 @@ Options:
 
 options = "hb:s:w:i:o:d:n"
 
-long_options = ["help", "bin=", "time_step=", "time_window=",
+long_options = ["help", "config=", "bin=", "time_step=", "time_window=",
                 "instrument=", "observatory=", "detector=", 
                 "naxis=", "crpix=", "cdelt=", "crval=",
                 "obj_rmin=", "obj_rmax=", "data_rmin=", "data_rmax=",
@@ -83,7 +83,8 @@ def main():
         usage()
         sys.exit(2)
     # defaults
-    config_file = "srt_default.cfg"
+    script_path = sys.path[0]
+    config_file = os.path.join(script_path, "srt_default.cfg")
     data_params = dict()
     mask_opt = dict()
     mask_negative = False
@@ -175,6 +176,8 @@ def main():
             x0 = a
         elif o in ("-o", "--output"):
             output = a
+        elif o == "--config":
+            pass # handled before
         else:
             assert False, "unhandled option"
 
@@ -199,7 +202,7 @@ def main():
     P, D, obj_mask, data_mask = model(data, obj, **mask_opt)
     # inversion
     b = data[data_mask == 0]
-    exec("sol = " + optimizer + "(P, b, D, hypers, maxiter=maxiter, tol=tol)")
+    exec("sol = lo." + optimizer + "(P, b, D, hypers, maxiter=maxiter, tol=tol)")
     # reshape result
     fsol = fa.zeros(obj.shape, header=object_header)
     fsol[obj_mask == 0] = sol.flatten()
