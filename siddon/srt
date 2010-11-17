@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.6
 
 """
 Performs Solar Rotational Tomography from the command line.
@@ -116,6 +116,10 @@ def main():
     opt_params["hypers"] = parse_tuple_float(config.get("optimization", "hyperparameters"))
     opt_params["maxiter"] = config.getint("optimization", "maxiter")
     opt_params["tol"] = config.getfloat("optimization", "tol")
+    try:
+        opt_params["dt_min"] = config.getfloat("optimization", "dt_min")
+    except(ConfigParser.NoOptionError):
+        opt_params["dt_min"] = data_params["time_step"] / 2.
     # parse arguments
     if len(args) == 0:
         usage()
