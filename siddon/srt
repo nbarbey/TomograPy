@@ -47,6 +47,8 @@ Options:
   --hyperparameters  Hyperparameters of the smoothness prior.
   --maxiter          Maximum iteration number.
   --tol              Tolerance.
+  --dt_min           Minimal time under which projection are considered 
+                     simultaneous.
 
   Other options
 
@@ -63,6 +65,7 @@ long_options = ["help", "config=", "bin=", "time_step=", "time_window=",
                 "obj_rmin=", "obj_rmax=", "data_rmin=", "data_rmax=",
                 "negative",
                 "model=", "optimizer=", "hyperparameters=", "maxiter=", "tol=",
+                "dt_min=",
                 "input=", "output="]
 
 model_dict = {"srt":srt, "stsrt":stsrt, "thomson":thomson}
@@ -178,6 +181,8 @@ def main():
             opt_params["tol"] = float(a)
         elif o in ("--input"):
             opt_params["input"] = a
+        elif o in ("--dt_min"):
+            opt_params["dt_min"] = a
         # other parameters
         elif o in ("-o", "--output"):
             output = a
