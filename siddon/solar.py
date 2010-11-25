@@ -186,6 +186,8 @@ def define_data_mask(data, Rmin=None, Rmax=None, mask_negative=False):
             data_mask *= (R > Rmax)
     if mask_negative:
         data_mask *= (data < 0.)
+    if Rmin is None and Rmax is None and mask_negative is False:
+        data_mask = np.zeros(data.shape, dtype=bool)
     return data_mask
 
 def distance_to_sun_center(data):
@@ -242,6 +244,8 @@ def define_map_mask(cube, Rmin=None, Rmax=None):
             obj_mask *= (R < Rmin)
         if Rmax is None:
             obj_mask *= (R > Rmax)
+    if Rmin is None and Rmax is None:
+        obj_mask = np.zeros(cube.shape, dtype=bool)
     return obj_mask
 
 def map_radius(cube):
@@ -292,6 +296,7 @@ def sort_data_array(data):
     return data
 
 def temporal_groups_indexes(data, dt_min):
+    # XXX buggy if no groups !!!
     times = [convert_time(t) for t in data.header['DATE_OBS']]
     ind1 = list(np.where(np.diff(times) < dt_min)[0])
     return ind1
