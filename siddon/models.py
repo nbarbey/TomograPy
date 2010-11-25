@@ -108,7 +108,7 @@ def stsrt(data, cube, **kwargs):
     S = group_sum(ind, cube, data)
     P = P * S.T
     # priors
-    D = [lo.diff(cube4.shape, axis=i) for i in xrange(cube.ndim)]
+    D = [lo.diff(cube4.shape, axis=i) for i in xrange(cube4.ndim)]
     # mask object
     if obj_rmin is not None or obj_rmax is not None:
         Mo, obj_mask = mask_object(cube, kwargs)
