@@ -153,7 +153,8 @@ def time_compare(x, y):
     else: # a < b
         return -1
 
-def define_data_mask(data, Rmin=None, Rmax=None, mask_negative=False):
+def define_data_mask(data, data_rmin=None, data_rmax=None, 
+                     mask_negative=False, mask_nan=True, **kwargs):
     """
     Defines a mask of shape data.shape.
 
@@ -163,31 +164,34 @@ def define_data_mask(data, Rmin=None, Rmax=None, mask_negative=False):
     data: A data InfoArray with 'RSUN' and 'CRPIX{1,2}' as metadata.
       The data set.
 
-    Rmin: float (optional)
-      Data below Rmin is masked. Rmin is defined relatively to RSUN
+    data_rmin: float (optional)
+      Data below data_rmin is masked. data_rmin is defined relatively to RSUN
 
-    Rmin: float (optional)
-      Data above Rmax is masked. Rmin is defined relatively to RSUN
+    data_rmax: float (optional)
+      Data above data_rmax is masked. data_rmax is defined relatively to RSUN
 
     mask_negative: boolean
       If True, negative data is masked.
+
+    mask_nan: boolean
+      If True, nan data is masked.
 
     Output
     ------
     data_mask: ndarray of booleans of shapa data.shape
     """
-    data_mask = np.ones(data.shape, dtype=bool)
+    data_mask = np.zeros(data.shape, dtype=bool)
     # if no radius limits no need to compute R
-    if Rmin is not None or Rmax is not None:
+    if data_rmin is not None or data_rmax is not None:
         R = distance_to_sun_center(data)
-        if Rmin is not None:
-            data_mask *= (R < Rmin)
-        if Rmax is None:
-            data_mask *= (R > Rmax)
+        if data_rmin is not None:
+            data_mask[(R < data_rmin)] = 1
+        if data_rmax is None:
+            data_mask[(R > data_rmax)] = 1
     if mask_negative:
-        data_mask *= (data < 0.)
-    if Rmin is None and Rmax is None and mask_negative is False:
-        data_mask = np.zeros(data.shape, dtype=bool)
+        data_mask[data < 0.] = 1
+    if mask_nan:
+        data_mask[np.isnan(data)] = 1
     return data_mask
 
 def distance_to_sun_center(data):
@@ -233,19 +237,17 @@ def compute_rsun(data):
         rsun[i] = np.arctan(1. / d) / cdelt1
     return rsun
 
-def define_map_mask(cube, Rmin=None, Rmax=None):
+def define_map_mask(cube, obj_rmin=None, obj_rmax=None, **kwargs):
     """
     Output a mask of shape cube.shape.
     """
-    obj_mask = np.ones(cube.shape, dtype=bool)
-    if Rmin is not None or Rmax is not None:
+    obj_mask = np.zeros(cube.shape, dtype=bool)
+    if obj_rmin is not None or obj_rmax is not None:
         R = map_radius(cube)
-        if Rmin is not None:
-            obj_mask *= (R < Rmin)
-        if Rmax is None:
-            obj_mask *= (R > Rmax)
-    if Rmin is None and Rmax is None:
-        obj_mask = np.zeros(cube.shape, dtype=bool)
+        if obj_rmin is not None:
+            obj_mask[R < obj_rmin] = 1
+        if obj_rmax is None:
+            obj_mask[R > obj_rmax] = 1
     return obj_mask
 
 def map_radius(cube):

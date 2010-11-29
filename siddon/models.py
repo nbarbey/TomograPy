@@ -53,7 +53,7 @@ def _apply_object_mask(P, D, cube, **kwargs):
     obj_rmax = kwargs.get('obj_rmax', None)
     # Define masking.
     if obj_rmin is not None or obj_rmax is not None:
-        Mo, obj_mask = mask_object(cube, kwargs)
+        Mo, obj_mask = mask_object(cube, **kwargs)
         P = P * Mo.T
         D = [Di * Mo.T for Di in D]
     else:
@@ -64,15 +64,14 @@ def _apply_data_mask(P, data, **kwargs):
     # Parse kwargs.
     data_rmin = kwargs.get('data_rmin', None)
     data_rmax = kwargs.get('data_rmax', None)
-    mask_negative = kwargs.get('mask_negative', None)
-    if (data_rmin is not None or
-        data_rmax is not None or
-        mask_negative is not None):
-        data_mask = solar.define_data_mask(data,
-                                           Rmin=data_rmin,
-                                           Rmax=data_rmax,
-                                           mask_negative=mask_negative)
+    mask_negative = kwargs.get('mask_negative', False)
+    mask_nan = kwargs.get('mask_nan', True)
+    # define mask if required
+    if (data_rmin is not None or data_rmax is not None or
+        mask_negative is not False or mask_nan is not False):
+        data_mask = solar.define_data_mask(data, **kwargs)
         Md = lo.mask(data_mask)
+        # apply mask to model
         P = Md * P
     else:
         data_mask = None
@@ -122,13 +121,11 @@ def stsrt(data, cube, **kwargs):
     P, data_mask = _apply_data_mask(P, data, **kwargs)
     return P, D, obj_mask, data_mask
 
-def mask_object(cube, kwargs):
+def mask_object(cube, **kwargs):
     obj_rmin = kwargs.get('obj_rmin', None)
     obj_rmax = kwargs.get('obj_rmax', None)
     if obj_rmin is not None or obj_rmax is not None:
-        obj_mask = solar.define_map_mask(cube,
-                                          Rmin=obj_rmin,
-                                          Rmax=obj_rmax)
+        obj_mask = solar.define_map_mask(cube, **kwargs)
         Mo = lo.mask(obj_mask)
     return Mo, obj_mask
 
