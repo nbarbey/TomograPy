@@ -215,6 +215,9 @@ def main():
         opt_params["x0"] = fa.FitsArray(file=opt_params["input"])
     # model
     P, D, obj_mask, data_mask = model(data, obj, **mask_params)
+    # apply masking to data
+    data *= (1 - data_mask)
+    data[np.isnan(data)] = 0.
     # inversion
     b = data.ravel()
     exec("sol = lo." + optimizer + "(P, b, D, hypers, **opt_params)")
