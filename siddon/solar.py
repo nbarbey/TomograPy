@@ -246,7 +246,7 @@ def define_map_mask(cube, obj_rmin=None, obj_rmax=None, **kwargs):
         R = map_radius(cube)
         if obj_rmin is not None:
             obj_mask[R < obj_rmin] = 1
-        if obj_rmax is None:
+        if obj_rmax is not None:
             obj_mask[R > obj_rmax] = 1
     return obj_mask
 
