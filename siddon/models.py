@@ -110,7 +110,7 @@ def stsrt(data, cube, **kwargs):
     D = [lo.diff(cube4.shape, axis=i) for i in xrange(cube4.ndim)]
     # mask object
     if obj_rmin is not None or obj_rmax is not None:
-        Mo, obj_mask = mask_object(cube, kwargs)
+        Mo, obj_mask = mask_object(cube, **kwargs)
         obj_mask = obj_mask.reshape(obj_mask.shape + (1,)).repeat(n, axis=-1)
         Mo = lo.mask(obj_mask)
         P = P * Mo.T
