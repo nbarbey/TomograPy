@@ -28,7 +28,12 @@ def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
         raise ValueError('Directory does not exist')
     # read files
     fnames = os.listdir(path)
-    files = [pyfits.fitsopen(os.path.join(path, fname))[0] for fname in fnames]
+    files = list()
+    for fname in fnames:
+        try:
+            files.append(pyfits.fitsopen(os.path.join(path, fname))[0])
+        except(IOError):
+            pass
     files = filter_files(files, **kargs)
     for i, f in enumerate(files):
         fits_array = fa.hdu2fitsarray(f)
@@ -55,21 +60,33 @@ def update_header(array):
     # read useful keywords
     lon = np.radians(array.header['CRLN_OBS'])
     lat = np.radians(array.header['CRLT_OBS'])
-    rol = np.radians(array.header['CROTA2'])
+    # roll angle
     try:
-        x = array.header['HAEX_OBS']
+        pc2_1 = array.header['PC2_1']
+        pc1_1 = array.header['PC1_1']
+        cdelt1 = array.header['CDELT1']
+        cdelt2 = array.header['CDELT2']
+        rol =np.arctan(pc2_1 * cdelt2 / (pc1_1 * cdelt1))
     except(KeyError):
-        x = array.header['HAEX']
+        rol = np.radians(array.header['CROTA2'])
+    # distance from observer to sun center
     try:
-        y = array.header['HAEY_OBS']
+        d = array.header['DSUN_OBS'] / solar_radius
     except(KeyError):
-        y = array.header['HAEY']
-    try:
-        z = array.header['HAEZ_OBS']
-    except(KeyError):
-        z = array.header['HAEZ']
+        try:
+            x = array.header['HAEX_OBS']
+        except(KeyError):
+            x = array.header['HAEX']
+        try:
+            y = array.header['HAEY_OBS']
+        except(KeyError):
+            y = array.header['HAEY']
+        try:
+            z = array.header['HAEZ_OBS']
+        except(KeyError):
+            z = array.header['HAEZ']
+        d = np.sqrt(x ** 2 + y ** 2 + z ** 2) / solar_radius
     # infere linked values
-    d = np.sqrt(x ** 2 + y ** 2 + z ** 2) / solar_radius
     xd = d * np.cos(lat) * np.cos(lon)
     yd = d * np.cos(lat) * np.sin(lon)
     zd = d * np.sin(lat)
@@ -186,7 +203,7 @@ def define_data_mask(data, data_rmin=None, data_rmax=None,
         R = distance_to_sun_center(data)
         if data_rmin is not None:
             data_mask[(R < data_rmin)] = 1
-        if data_rmax is None:
+        if data_rmax is not None:
             data_mask[(R > data_rmax)] = 1
     if mask_negative:
         data_mask[data < 0.] = 1
