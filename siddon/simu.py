@@ -64,8 +64,10 @@ class Object(fa.FitsArray):
     """
     def __new__(subtype, shape, dtype=float, buffer=None, offset=0,
                 strides=None, order=None, header=None):
-        obj = fa.FitsArray.__new__(subtype, shape, dtype, buffer, offset,
-                                   strides, order, header=header)
+        obj = fa.FitsArray.__new__(subtype, shape, dtype=dtype,
+                                   buffer=buffer, offset=offset,
+                                   strides=strides, order=order,
+                                   header=header)
         # look for mandatory keywords
         for k in object_keys:
             if not obj.header.has_key(k):
@@ -125,13 +127,18 @@ def circular_trajectory_data(**kargs):
         data.header[k] = data.header[k].astype(np.int32)
     return data
 
-def object_from_header(header, **kargs):
+def object_from_header(header, **kwargs):
     """
     Generate an object from a given header
     """
-    shape =  header['NAXIS1'], header['NAXIS2'], header['NAXIS3']
-    dtype = header.pop('dtype', np.float64)
-    obj = Object(shape, header=header, dtype=dtype, **kargs)
+    shape = header['NAXIS1'], header['NAXIS2'], header['NAXIS3']
+    try:
+        dtype = fa.bitpix[str(header['BITPIX'])]
+    except(KeyError):
+        dtype = np.float64
+    dtype = header.pop('dtype', dtype)
+    dtype = kwargs.pop('dtype', dtype)
+    obj = Object(shape, header=header, dtype=dtype, **kwargs)
     return obj
 
 def spherical_object(**kargs):
