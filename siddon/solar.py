@@ -107,7 +107,7 @@ def update_header(array):
 
 def convert_time(time_str):
     # optionnaly remove Z
-    time_str.rstrip("Z")
+    time_str = time_str.rstrip("Z")
     dpos = time_str.rfind(".")
     # remove fraction of seconds and add them afterwards
     time_str, sec_float = time_str[:dpos], float(time_str[dpos:])
