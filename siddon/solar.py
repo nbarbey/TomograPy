@@ -106,10 +106,15 @@ def update_header(array):
     array.header.update('time', convert_time(time_str))
 
 def convert_time(time_str):
-    time_str = time_str[:-4]
+    # optionnaly remove Z
+    time_str.rstrip("Z")
+    dpos = time_str.rfind(".")
+    # remove fraction of seconds and add them afterwards
+    time_str, sec_float = time_str[:dpos], float(time_str[dpos:])
     format = '%Y-%m-%dT%H:%M:%S'
     current_time = time.strptime(time_str, format)
     current_time = time.mktime(current_time)
+    current_time += sec_float
     return current_time
 
 def filter_files(files, instrume=None, obsrvtry=None, detector=None, 
