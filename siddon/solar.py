@@ -66,7 +66,7 @@ def update_header(array):
         pc1_1 = array.header['PC1_1']
         cdelt1 = array.header['CDELT1']
         cdelt2 = array.header['CDELT2']
-        rol =np.arctan(pc2_1 * cdelt2 / (pc1_1 * cdelt1))
+        rol = np.arctan2(pc2_1 * cdelt2, pc1_1 * cdelt1)
     except(KeyError):
         rol = np.radians(array.header['CROTA2'])
     # distance from observer to sun center
@@ -106,10 +106,15 @@ def update_header(array):
     array.header.update('time', convert_time(time_str))
 
 def convert_time(time_str):
-    time_str = time_str[:-4]
+    # optionnaly remove Z
+    time_str = time_str.rstrip("Z")
+    dpos = time_str.rfind(".")
+    # remove fraction of seconds and add them afterwards
+    time_str, sec_float = time_str[:dpos], float(time_str[dpos:])
     format = '%Y-%m-%dT%H:%M:%S'
     current_time = time.strptime(time_str, format)
     current_time = time.mktime(current_time)
+    current_time += sec_float
     return current_time
 
 def filter_files(files, instrume=None, obsrvtry=None, detector=None, 
