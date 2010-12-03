@@ -346,3 +346,12 @@ def centered_stack(pshape, shape, n_images=1., radius=1.,
     header.update({'min_lon':min_lon})
     header.update({'max_lon':max_lon})
     return circular_trajectory_data(**header)
+
+def fov(obj, radius):
+    h = obj.header
+    pshape = list()
+    for i in xrange(3):
+        si = str(i + 1)
+        pshape.append(h['NAXIS' + si] * h['CDELT' + si])
+    pmax = np.asarray(pshape).max()
+    return np.arctan2(pmax / 2., radius)
