@@ -66,7 +66,7 @@ def update_header(array):
         pc1_1 = array.header['PC1_1']
         cdelt1 = array.header['CDELT1']
         cdelt2 = array.header['CDELT2']
-        rol =np.arctan(pc2_1 * cdelt2 / (pc1_1 * cdelt1))
+        rol = np.arctan2(pc2_1 * cdelt2, pc1_1 * cdelt1)
     except(KeyError):
         rol = np.radians(array.header['CROTA2'])
     # distance from observer to sun center
