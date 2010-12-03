@@ -211,6 +211,7 @@ def backprojector4d(data, cube, obstacle=None):
     exec(proj_str % my_siddon_dict)
     return cube
 
+# helpers to build appropriate objects
 def dataarray_from_header(header):
     """
     Output an InfoArray using a list of headers.
@@ -220,3 +221,128 @@ def dataarray_from_header(header):
     shape += len(header['NAXIS']),
     dtype = fa.bitpix[str(int(header['BITPIX'][0]))]
     return fa.InfoArray(shape, header=header, dtype=dtype)
+
+def centered_cubic_map_header(pshape, shape, dtype=np.float64):
+    """
+    Generate a centered cubic map header
+
+    Arguments
+    ---------
+    pshape : physical shape
+    shape : shape in pixels
+
+    Output
+    ------
+    header: pyfits header
+    """
+    if np.isscalar(shape):
+        shape = (shape,)
+    shape = np.asarray(shape)
+    if shape.size == 1:
+        shape = np.asarray(list(shape) * 3)
+    elif shape.size == 2 or shape.size > 3:
+        raise ValueError("shape should be a 1 or 3 tuple")
+    if np.isscalar(pshape):
+        pshape = (pshape,)
+    pshape = np.asarray(pshape)
+    if pshape.size == 1:
+        pshape = np.asarray(list(pshape) * 3)
+    elif pshape.size == 2 or pshape.size > 3:
+        raise ValueError("physical shape should be a 1 or 3 tuple")
+    # generate header
+    header = dict()
+    header['SIMPLE'] = True
+    header['BITPIX'] = fa.bitpix_inv[dtype.__name__]
+    header['NAXIS'] = 3
+    header['NAXIS'] = 3
+    for i in xrange(3):
+        header['NAXIS' + str(i + 1)] = shape[i]
+        header['CRPIX' + str(i + 1)] = shape[i] / 2.
+        header['CDELT' + str(i + 1)] = pshape[i] / float(shape[i])
+        header['CRVAL' + str(i + 1)] = 0.
+    return header
+
+def centered_cubic_map(pshape, shape, dtype=np.float64):
+    """
+    Generate a centered cubic map header
+
+    Arguments
+    ---------
+    pshape : physical shape
+    shape : shape in pixels
+
+    Output
+    ------
+    cube: 3d FitsArray
+    """
+    header = centered_cubic_map_header(pshape, shape, dtype=dtype)
+    # generate cube and exit
+    return fa.fitsarray_from_header(header)
+
+def centered_image_header(pshape, shape, dtype=np.float64):
+    """
+    Generate a centered cubic map.
+
+    Arguments
+    ---------
+    pshape : physical shape
+    shape : shape in pixels
+
+    Output
+    ------
+    cube: 3d FitsArray
+    """
+    if np.isscalar(shape):
+        shape = (shape,)
+    shape = np.asarray(shape)
+    if shape.size == 1:
+        shape = np.asarray(list(shape) * 3)
+    elif shape.size > 2:
+        raise ValueError("shape should be a 1 or 2 tuple")
+    if np.isscalar(pshape):
+        pshape = (pshape,)
+    pshape = np.asarray(pshape)
+    if pshape.size == 1:
+        pshape = np.asarray(list(pshape) * 3)
+    elif pshape.size > 2:
+        raise ValueError("physical shape should be a 1 or 2 tuple")
+    # generate header
+    header = dict()
+    header['SIMPLE'] = True
+    header['BITPIX'] = fa.bitpix_inv[dtype.__name__]
+    header['NAXIS'] = 2
+    for i in xrange(2):
+        header['NAXIS' + str(i + 1)] = shape[i]
+        header['CRPIX' + str(i + 1)] = shape[i] / 2.
+        header['CDELT' + str(i + 1)] = pshape[i] / float(shape[i])
+        header['CRVAL' + str(i + 1)] = 0.
+    return header
+
+def centered_image(pshape, shape, dtype=np.float64):
+    """
+    Generate a centered cubic map.
+
+    Arguments
+    ---------
+    pshape : physical shape
+    shape : shape in pixels
+
+    Output
+    ------
+    cube: 3d FitsArray
+    """
+    header = centered_image_header(pshape, shape, dtype=dtype)
+    return fa.fitsarray_from_header(header)
+
+def centered_stack(pshape, shape, n_images=1., radius=1.,
+                   min_lon=0., max_lon=np.pi, dtype=np.float64):
+    """
+    Generate a stack with centered image and circular trajectory data.
+    """
+    from simu import circular_trajectory_data
+    header = centered_image_header(pshape, shape, dtype=np.float64)
+    header.update({'n_images':n_images})
+    header.update({'radius':radius})
+    header.update({'min_lon':min_lon})
+    header.update({'max_lon':max_lon})
+    return circular_trajectory_data(**header)
