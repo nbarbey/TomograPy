@@ -4,6 +4,7 @@ import nose
 from numpy.testing import *
 import numpy as np
 import siddon
+import fitsarray as fa
 
 # metadata
 minimal_object_header =  {'SIMPLE':True,'BITPIX':-64,
@@ -12,6 +13,18 @@ minimal_object_header =  {'SIMPLE':True,'BITPIX':-64,
                           'CDELT1':1., 'CDELT2':1., 'CDELT3':1.,
                           'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
 
+small_object_header =  {'SIMPLE':True,'BITPIX':-64,
+                        'NAXIS1':16, 'NAXIS2':16, 'NAXIS3':16,
+                        'CRPIX1':8., 'CRPIX2':8., 'CRPIX3':8.,
+                        'CDELT1':1., 'CDELT2':1., 'CDELT3':1.,
+                        'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
+
+small_object_header32 =  {'SIMPLE':True,'BITPIX':-32,
+                        'NAXIS1':16, 'NAXIS2':16, 'NAXIS3':16,
+                        'CRPIX1':8., 'CRPIX2':8., 'CRPIX3':8.,
+                        'CDELT1':1., 'CDELT2':1., 'CDELT3':1.,
+                        'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
+
 minimal_image_header = {'n_images':1,
                         'SIMPLE':True, 'BITPIX':-64,
                         'NAXIS1':1, 'NAXIS2':1,
@@ -19,11 +32,61 @@ minimal_image_header = {'n_images':1,
                         'CDELT1':1., 'CDELT2':1.,
                         'CRVAL1':0., 'CRVAL2':0.,
                         }
+
+small_image_header = {'n_images':1,
+                      'SIMPLE':True, 'BITPIX':-64,
+                      'NAXIS1':16, 'NAXIS2':16,
+                      'CRPIX1':8., 'CRPIX2':8.,
+                      'CDELT1':1., 'CDELT2':1.,
+                      'CRVAL1':0., 'CRVAL2':0.,
+                      }
+
+small_image_header32 = {'n_images':1,
+                      'SIMPLE':True, 'BITPIX':-32,
+                      'NAXIS1':16, 'NAXIS2':16,
+                      'CRPIX1':8., 'CRPIX2':8.,
+                      'CDELT1':1., 'CDELT2':1.,
+                      'CRVAL1':0., 'CRVAL2':0.,
+                      }
+
+object_headers = [minimal_object_header, small_object_header, small_object_header32]
+image_headers = [minimal_image_header, small_image_header, small_image_header32]
+
+# complement image headers with usefull keyword for simulations
+for h in image_headers:
+    h['radius'] = 1e6
+    h['max_lon'] = np.pi
+
+def check_simu_shape(h):
+    obj0 = siddon.simu.object_from_header(h)
+    assert_equal(obj0.shape, (h['NAXIS1'], h['NAXIS2'], h['NAXIS3']))
+
+def test_object_from_header():
+    for h in object_headers:
+        yield check_simu_shape, h
+
+def check_simu_dtype(h):
+    obj0 = siddon.simu.object_from_header(h)
+    dtype = fa.bitpix[str(h['BITPIX'])]
+    assert_equal(obj0.dtype.name, dtype)
+
+def test_object_from_header_dtype():
+    for h in object_headers:
+        yield check_simu_dtype, h
+
+def check_projector(im_h, obj_h):
+    obj = siddon.simu.object_from_header(obj_h)
+    data = siddon.simu.circular_trajectory_data(**im_h)
+    siddon.projector(data, obj)
+
+def test_projector():
+    for im_h in image_headers:
+        for obj_h in object_headers:
+            yield check_projector, im_h, obj_h
+
 obj0 = siddon.simu.object_from_header(minimal_object_header)
 obj0[:] = 1.
 
-minimal_image_header['radius'] = 1e6
-minimal_image_header['max_lon'] = np.pi
 data0 = siddon.simu.circular_trajectory_data(**minimal_image_header)
 data0[:] = 1.
 
