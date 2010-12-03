@@ -39,6 +39,8 @@ def srt(data, cube, **kwargs):
     -------
     P : The projector with masking
     D : Smoothness priors
+    obj_mask : object mask array
+    data_mask : data mask array
 
     """
     # Model : it is Solar rotational tomography, so obstacle="sun".
@@ -81,6 +83,13 @@ def stsrt(data, cube, **kwargs):
     """
     Smooth Temporal Solar Rotational Tomography.
     Assumes data is sorted by observation time 'DATE_OBS'.
+
+    Returns
+    -------
+    P : The projector with masking
+    D : Smoothness priors
+    obj_mask : object mask array
+    data_mask : data mask array
     """
     # Parse kwargs.
     obj_rmin = kwargs.get('obj_rmin', None)
@@ -165,8 +174,10 @@ def thomson(data, cube, u=.5, **kwargs):
 
     Returns
     -------
-    T: LinearOperator
-      Thomson scattering projector.
+    P : The projector with masking
+    D : Smoothness priors
+    obj_mask : object mask array
+    data_mask : data mask array
     """
     # projector
     pb = kwargs.get('pb', 'pb')
