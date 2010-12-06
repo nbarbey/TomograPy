@@ -54,16 +54,18 @@ def sinogram(data, r, amin=-np.pi, amax=np.pi, n=None, fig=None, **kwargs):
     ------
     Returns the sinogram as a ndarray.
     """
+    from solar import compute_rsun
     # handle kwargs
     if n is None:
         n = np.max(data.shape[0:2])
     # interpolat each frame
     a = np.linspace(amin, amax, n)
     sino = np.zeros((n, data.shape[-1]))
+    rsun = compute_rsun(data)
     for i in xrange(data.shape[-1]):
         # generate interpolation grid
         a0 = a - np.radians(data[i].header.get('SC_ROLL', 0.)[i])
-        r0 = r * data[i].header.get('RSUN', 1.)[i] / 2
+        r0 = r * rsun[i] / 2
         x = r0 * np.cos(a0) + data[i].header.get('CRPIX1', 0.)[i]
         y = r0 * np.sin(a0) + data[i].header.get('CRPIX2', 0.)[i]
         sino[..., i] = map_coordinates(data[..., i], (x, y))
