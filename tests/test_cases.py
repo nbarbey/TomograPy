@@ -1,55 +1,32 @@
 """
 Define test cases to use in other test modules.
 """
+from copy import copy
 import numpy as np
-
+import siddon
 # metadata
-minimal_object_header =  {'SIMPLE':True,'BITPIX':-64,
-                          'NAXIS1':1, 'NAXIS2':1, 'NAXIS3':1,
-                          'CRPIX1':.5, 'CRPIX2':.5, 'CRPIX3':.5,
-                          'CDELT1':1., 'CDELT2':1., 'CDELT3':1.,
-                          'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
+dtypes = [np.float32, np.float64]
+pshapes = [3., 3.]
+shapes = [1, 16.]
+radius = 200.
+max_lon = 2 * np.pi
+date_obs = "2010-01-01T00:00:00Z"
+# objects lists
+object_headers64 = [siddon.centered_cubic_map_header(ps, s, dtype=np.float64) for ps, s in zip(pshapes, shapes)]
+object_headers32 = [siddon.centered_cubic_map_header(ps, s, dtype=np.float32) for ps, s in zip(pshapes, shapes)]
+object_headers = object_headers64 + object_headers32
 
-small_object_header =  {'SIMPLE':True,'BITPIX':-64,
-                        'NAXIS1':16, 'NAXIS2':16, 'NAXIS3':16,
-                        'CRPIX1':8., 'CRPIX2':8., 'CRPIX3':8.,
-                        'CDELT1':1., 'CDELT2':1., 'CDELT3':1.,
-                        'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
+# image pshapes
+im_pshapes = [siddon.siddon.fov(obj_h, radius) for obj_h in object_headers64]
+shapes = [1, 32.]
 
-small_object_header32 =  {'SIMPLE':True,'BITPIX':-32,
-                        'NAXIS1':16, 'NAXIS2':16, 'NAXIS3':16,
-                        'CRPIX1':8., 'CRPIX2':8., 'CRPIX3':8.,
-                        'CDELT1':1., 'CDELT2':1., 'CDELT3':1.,
-                        'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
-
-minimal_image_header = {'n_images':1,
-                        'SIMPLE':True, 'BITPIX':-64,
-                        'NAXIS1':1, 'NAXIS2':1,
-                        'CRPIX1':0., 'CRPIX2':0.,
-                        'CDELT1':1., 'CDELT2':1.,
-                        'CRVAL1':0., 'CRVAL2':0.,
-                        }
-
-small_image_header = {'n_images':1,
-                      'SIMPLE':True, 'BITPIX':-64,
-                      'NAXIS1':16, 'NAXIS2':16,
-                      'CRPIX1':8., 'CRPIX2':8.,
-                      'CDELT1':1., 'CDELT2':1.,
-                      'CRVAL1':0., 'CRVAL2':0.,
-                      }
-
-small_image_header32 = {'n_images':1,
-                      'SIMPLE':True, 'BITPIX':-32,
-                      'NAXIS1':16, 'NAXIS2':16,
-                      'CRPIX1':8., 'CRPIX2':8.,
-                      'CDELT1':1., 'CDELT2':1.,
-                      'CRVAL1':0., 'CRVAL2':0.,
-                      }
-
-object_headers = [minimal_object_header, small_object_header, small_object_header32]
-image_headers = [minimal_image_header, small_image_header, small_image_header32]
+#image lists
+image_headers64 = [siddon.centered_image_header(ps, s, dtype=np.float64) for ps, s in zip(im_pshapes, shapes)]
+image_headers32 = [siddon.centered_image_header(ps, s, dtype=np.float32) for ps, s in zip(im_pshapes, shapes)]
+image_headers = image_headers64 + image_headers32
 
 # complement image headers with usefull keyword for simulations
 for h in image_headers:
-    h['radius'] = 1e6
-    h['max_lon'] = np.pi
+    h['radius'] = radius
+    h['max_lon'] = max_lon
+    h['DATE_OBS'] = date_obs

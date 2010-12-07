@@ -25,6 +25,7 @@ def test_object_from_header_dtype():
     for h in object_headers:
         yield check_simu_dtype, h
 
+# check that projection does not fail
 def check_projector(im_h, obj_h):
     obj = siddon.simu.object_from_header(obj_h)
     data = siddon.simu.circular_trajectory_data(**im_h)
@@ -36,10 +37,10 @@ def test_projector():
         for obj_h in object_headers:
             yield check_projector, im_h, obj_h
 
-obj0 = siddon.simu.object_from_header(minimal_object_header)
+obj0 = siddon.simu.object_from_header(object_headers64[0])
 obj0[:] = 1.
 
-data0 = siddon.simu.circular_trajectory_data(**minimal_image_header)
+data0 = siddon.simu.circular_trajectory_data(**image_headers64[0])
 data0[:] = 1.
 
 # class to generate test
