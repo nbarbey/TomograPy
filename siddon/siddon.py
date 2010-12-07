@@ -358,3 +358,138 @@ def fov(obj, radius):
         pshape.append(h['NAXIS' + si] * h['CDELT' + si])
     pdiag = np.sqrt(np.sum(np.asarray(pshape) ** 2))
     return np.arctan2(pdiag, radius)
+
+
+# duplicate of C functions as python for testing purpose
+def rotation_matrix(lon, lat, rol):
+
+    cosln = np.cos(lon)
+    sinln = np.sin(lon)
+    coslt = np.cos(lat)
+    sinlt = np.sin(lat)
+    cosrl = np.cos(rol)
+    sinrl = np.sin(rol)
+
+    R = np.empty((3, 3))
+
+    R[0, 0] = - cosln * coslt
+    R[0, 1] = - sinln * cosrl - cosln * sinlt * sinrl
+    R[0, 2] =   sinln * sinrl - cosln * sinlt * cosrl
+    R[1, 0] = - sinln * coslt
+    R[1, 1] =   cosln * cosrl - sinln * sinlt * sinrl
+    R[1, 2] = - cosln * sinrl - sinln * sinlt * cosrl
+    R[2, 0] = - sinlt
+    R[2, 1] =   coslt * sinrl
+    R[2, 2] =   coslt * cosrl
+
+    return R
+
+def array_to_header(data, ind, name, arr):
+    """
+    Set keywords defining an array.
+    """
+    h = data.header
+    if arr.ndim == 1:
+        for i in xrange(arr.shape):
+            h[name + str(i)][ind] = arr[i]
+    elif arr.ndim == 2:
+        for i in xrange(arr.shape[0]):
+            for j in xrange(arr.shape[1]):
+                h[name + "%i_%i" % (i, j)][ind] = arr[i, j]
+    else:
+        raise ValueError("Not implemented for arr.ndim > 2")
+
+def header_to_array(data, ind, name):
+    """
+    Set keywords defining an array.
+    """
+    # find array dimension and shape
+    import re
+    h = data.header
+    l = len(name)
+    imax, jmax = 0, 0
+    imin, jmin = 10, 10
+    is1d = False
+    is2d = False
+    for k in h.keys():
+        if name == k[:l]:
+            s = k[l:]
+            g = re.search('[0-9]_[0-9]', s)
+            if g is not None:
+                is2d = True
+                sl = s.split('_')
+                i, j = [int(a) for a in sl]
+                if i > imax:
+                    imax = i
+                if i < imin:
+                    imin = i
+                if j > jmax:
+                    jmax = j
+                if j < jmin:
+                    jmin = j
+            else:
+                g = re.search('[0-9]', s)
+                if g is not None:
+                    is1d = True
+                    i = int(s)
+                    if i > imax:
+                        imax = i
+                    if i < imin:
+                        imin = i
+    if is2d:
+        arr = np.empty((imax + 1 - imin, jmax + 1 - jmin))
+    elif is1d:
+        arr = np.empty(imax + 1 - imin)
+    else:
+        raise ValueError('header does not contain this array.')
+    # fill array
+    if arr.ndim == 1:
+        arr = np.empty(arr.shape)
+        for i in xrange(arr.shape[0]):
+            arr[i] = h[name + str(i + imin)][ind]
+    elif arr.ndim == 2:
+        arr = np.empty(arr.shape)
+        for i in xrange(arr.shape[0]):
+            for j in xrange(arr.shape[1]):
+                arr[i, j] = h[name + "%i_%i" % (i + imin, j + jmin)][ind]
+    else:
+        raise ValueError("Not implemented for arr.ndim > 2")
+    # return new array
+    return arr
+
+def full_rotation_matrix(data):
+    """
+    Update data header with rotation matrix.
+
+    Arguments
+    ---------
+    data: 3d InfoArray with header attribute (dict)
+
+    Returns
+    -------
+    Nothing, the data header is updated inplace.
+    """
+    h = data.header
+    for i in xrange(3):
+        for j in xrange(3):
+            h['R%i_%i' % (i, j)] = np.zeros(data.shape[-1])
+
+    for i in xrange(data.shape[-1]):
+        lon = h['LON'][i]
+        lat = h['LAT'][i]
+        rol = h['ROL'][i]
+
+        R = rotation_matrix(h['LON'][i], h['LAT'][i], h['ROL'][i])
+        array_to_header(data, i, "R", R)
+
+def define_unit_vector(l, g):
+    cosl = np.cos(l)
+    return np.asarray([cosl * np.cos(g), cosl * np.sin(g), np.sin(l)])
+
+apply_rotation = np.dot
+
+def sq(x):
+    return x ** 2
+
+def distance_to_center(M, u0, ac):
+    return np.sum([mi + ac * u0i for mi, u0i in zip(M, u0)])
