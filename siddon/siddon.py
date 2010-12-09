@@ -405,28 +405,80 @@ def rotation_matrix(lon, lat, rol):
 
     return R
 
-def array_to_header(data, ind, name, arr):
+def array_to_dict(indict, name, arr):
     """
-    Set keywords defining an array.
+    Set keywords defining an array as arri_j.
     """
-    h = data.header
     if arr.ndim == 1:
-        for i in xrange(arr.shape):
-            h[name + str(i)][ind] = arr[i]
+        for i in xrange(arr.shape[0]):
+            indict[name + str(i)] = arr[i]
     elif arr.ndim == 2:
         for i in xrange(arr.shape[0]):
             for j in xrange(arr.shape[1]):
-                h[name + "%i_%i" % (i, j)][ind] = arr[i, j]
+                indict[name + "%i_%i" % (i, j)] = arr[i, j]
     else:
         raise ValueError("Not implemented for arr.ndim > 2")
 
-def header_to_array(data, ind, name):
+def array_to_dict_data(indict, ind, name, arr):
     """
-    Set keywords defining an array.
+    Set keywords defining an array as arri_j.
+    """
+    if arr.ndim == 1:
+        for i in xrange(arr.shape[0]):
+            indict[name + str(i)][ind] = arr[i]
+    elif arr.ndim == 2:
+        for i in xrange(arr.shape[0]):
+            for j in xrange(arr.shape[1]):
+                indict[name + "%i_%i" % (i, j)][ind] = arr[i, j]
+    else:
+        raise ValueError("Not implemented for arr.ndim > 2")
+
+def dict_to_array(h, name):
+    """
+    Get an array from keywords as arri_j.
     """
     # find array dimension and shape
+    # minimum can be 0 or 1.
+    arr, imin, jmin = get_header_array_shape(h, name)
+    # fill array
+    if arr.ndim == 1:
+        arr = np.empty(arr.shape)
+        for i in xrange(arr.shape[0]):
+            arr[i] = h[name + str(i + imin)]
+    elif arr.ndim == 2:
+        arr = np.empty(arr.shape)
+        for i in xrange(arr.shape[0]):
+            for j in xrange(arr.shape[1]):
+                arr[i, j] = h[name + "%i_%i" % (i + imin, j + jmin)]
+    else:
+        raise ValueError("Not implemented for arr.ndim > 2")
+    # return new array
+    return arr
+
+def dict_to_array_data(h, ind, name):
+    """
+    Get an array from keywords as arri_j.
+    """
+    # find array dimension and shape
+    # minimum can be 0 or 1.
+    arr, imin, jmin = get_header_array_shape(h, name)
+    # fill array
+    if arr.ndim == 1:
+        arr = np.empty(arr.shape)
+        for i in xrange(arr.shape[0]):
+            arr[i] = h[name + str(i + imin)][ind]
+    elif arr.ndim == 2:
+        arr = np.empty(arr.shape)
+        for i in xrange(arr.shape[0]):
+            for j in xrange(arr.shape[1]):
+                arr[i, j] = h[name + "%i_%i" % (i + imin, j + jmin)][ind]
+    else:
+        raise ValueError("Not implemented for arr.ndim > 2")
+    # return new array
+    return arr
+
+def get_header_array_shape(h, name):
     import re
-    h = data.header
     l = len(name)
     imax, jmax = 0, 0
     imin, jmin = 10, 10
@@ -463,20 +515,7 @@ def header_to_array(data, ind, name):
         arr = np.empty(imax + 1 - imin)
     else:
         raise ValueError('header does not contain this array.')
-    # fill array
-    if arr.ndim == 1:
-        arr = np.empty(arr.shape)
-        for i in xrange(arr.shape[0]):
-            arr[i] = h[name + str(i + imin)][ind]
-    elif arr.ndim == 2:
-        arr = np.empty(arr.shape)
-        for i in xrange(arr.shape[0]):
-            for j in xrange(arr.shape[1]):
-                arr[i, j] = h[name + "%i_%i" % (i + imin, j + jmin)][ind]
-    else:
-        raise ValueError("Not implemented for arr.ndim > 2")
-    # return new array
-    return arr
+    return arr, imin, jmin
 
 def full_rotation_matrix(data):
     """
