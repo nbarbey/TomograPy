@@ -535,21 +535,169 @@ def full_rotation_matrix(data):
             h['R%i_%i' % (i, j)] = np.zeros(data.shape[-1])
 
     for i in xrange(data.shape[-1]):
-        lon = h['LON'][i]
-        lat = h['LAT'][i]
-        rol = h['ROL'][i]
-
         R = rotation_matrix(h['LON'][i], h['LAT'][i], h['ROL'][i])
-        array_to_header(data, i, "R", R)
+        array_to_dict_data(data.header, i, "R", R)
 
-def define_unit_vector(l, g):
-    cosl = np.cos(l)
-    return np.asarray([cosl * np.cos(g), cosl * np.sin(g), np.sin(l)])
+def full_unit_vector(data):
+    """
+    Defines an unit vector for each camera pixel.
+    """
+    h = data.header
+    # init array
+    u = np.empty(data.shape + (3,), dtype=data.dtype)
+    u2 = np.empty(data.shape[:-1] + (3,))
+    # loop on image
+    for i in xrange(data.shape[-1]):
+        R = dict_to_array_data(h, i, "R")
+        g = (np.arange(data.shape[0]) - h['CRPIX1'][i]) * h['CDELT1'][i]
+        l = (np.arange(data.shape[1]) - h['CRPIX2'][i]) * h['CDELT2'][i]
+        G, L = np.meshgrid(g, l)
+        # intermediary unit vector
+        u2[..., 0] = np.cos(L) * np.cos(G)
+        u2[..., 1] = np.cos(L) * np.sin(G)
+        u2[..., 2] = np.sin(L)
+        # rotated unit vector
+        u[..., i, :] = apply_rotation(R, u2)
+    return u
 
-apply_rotation = np.dot
+def apply_rotation(R, u2):
+    u0 = np.empty(u2.shape)
+    u0[..., 0] = R[0, 0] * u2[..., 0] + R[0, 1] * u2[..., 1] + R[0, 2] * u2[..., 2]
+    u0[..., 1] = R[1, 0] * u2[..., 0] + R[1, 1] * u2[..., 1] + R[1, 2] * u2[..., 2]
+    u0[..., 2] = R[2, 0] * u2[..., 0] + R[2, 1] * u2[..., 1] + R[2, 2] * u2[..., 2]
+    return u0
+
+def map_borders(h):
+    """
+    Update map header with coordinates of the border and physical
+    shape.
+    """
+    cdelt = np.asarray(dict_to_array(h, "CDELT"))
+    crpix = np.asarray(dict_to_array(h, "CRPIX"))
+    naxis = np.asarray(dict_to_array(h, "NAXIS"))
+    pshape = cdelt * naxis
+    array_to_dict(h, "PSHAPE", pshape)
+    Mmin = - crpix * cdelt
+    array_to_dict(h, "Mmin", Mmin)
+    Mmax = Mmin + pshape
+    array_to_dict(h, "Mmax", Mmax)
+
+def trace_ray(data, obj):
+    """
+    perform ray tracing.
+    """
+    map_borders(obj.header)
+    full_rotation_matrix(data)
+    u = full_unit_vector(data)
+    flag, p, a1, amin = intersect_cube(data, obj, u)
+    update, iv, D = initialize_raytracing(data, obj, u, p, a1, amin)
+    ac = amin.copy()
+    keep_iterating = in_obj(obj, iv)
+    # loop while still some ray inside
+    while np.any(keep_iterating):
+        return
+
+def intersect_cube(data, obj, u):
+    """
+    Flag the image pixels that intersect the cube.
+    """
+    # get metadata
+    Mmin = dict_to_array(obj.header, "Mmin")
+    Mmax = dict_to_array(obj.header, "Mmax")
+    pshape = dict_to_array(obj.header, "PSHAPE")
+    p = np.empty(u.shape)
+    a1 = np.empty(u.shape)
+    an = np.empty(u.shape)
+    for t in xrange(data.shape[-1]):
+        M = dict_to_array_data(data.header, t, "M")
+        for i in xrange(3):
+            p[..., t, i] = pshape[i] / u[..., t, i]
+            a1[..., t, i] = (Mmin[i] - M[i]) / u[..., t, i]
+            an[..., t, i] = (Mmax[i] - M[i]) / u[..., t, i]
+    pabs = np.abs(p)
+    Imin, Imax = compare(a1, an)
+    amin = max3(Imin[..., 0], Imin[..., 1], Imin[..., 2])
+    amax = min3(Imax[..., 0], Imax[..., 1], Imax[..., 2])
+    flag = amin < amax
+    return flag, p, a1, amin
+
+def initialize_raytracing(data, obj, u, p, a1, amin):
+    # metadata
+    Mmin = dict_to_array(obj.header, "Mmin")
+    pshape = dict_to_array(obj.header, "PSHAPE")
+    cdelt = dict_to_array(obj.header, "CDELT")
+    # LOS coordinate at the beginning of the object map
+    e = np.empty(u.shape)
+    for t in xrange(data.shape[-1]):
+        M = dict_to_array_data(data.header, t, "M")
+        for k in xrange(3):
+            e[..., t, k] = M[k]  + amin[..., t] * u[..., t, k]
+    # value to add at each voxel update
+    update = sign(e)
+    # current point coordinate in map voxels
+    iv = np.empty(u.shape, dtype=np.uint32)
+    for k in xrange(3):
+        iv[..., k] = np.abs((e[..., k] - Mmin[k]) / cdelt[k]).astype(np.uint32)
+        iv[..., k] -= np.abs((e[..., k] - Mmin[k]) / pshape[k]).astype(np.uint32)
+    del e
+    # next voxel
+    next = iv + (update + 1) / 2.
+    next[update == 0.] = np.inf
+    # distance to the next intersection of each kind (x, y or z)
+    D = np.empty(u.shape)
+    for k in xrange(3):
+        D[..., k] = next[..., k] * p[..., k] + a1[..., k] - amin
+    D[np.isnan(D)] = np.inf
+    return update, iv, D
+
+def voxel(data, flag, cube, iv, D, ac, pabs, update):
+    NotImplemented
+
+def compare(a1, an):
+    w = a1 < an
+    imin = an.copy()
+    imin[w] = a1[w]
+    imax = a1.copy()
+    imax[w] = an[w]
+    return imin, imax
+
+def max3(x, y, z):
+    amax = z.copy()
+    w1 = (x > y) * (x > z)
+    amax[w1] = x[w1]
+    w2 = (y >= x) * (y > z)
+    amax[w2] = y[w2]
+    return amax
+
+def min3(x, y, z):
+    amin = z.copy()
+    w1 = (x < y) * (x < z)
+    amin[w1] = x[w1]
+    w2 = (y <= x) * (y < z)
+    amin[w2] = y[w2]
+    return amin
+
+def sign(arr):
+    s = np.empty(arr.shape, dtype=np.int64)
+    s[arr < 0] = -1
+    s[arr > 0] = 1
+    s[arr == 0] = 0
+    return s
+
+def in_obj(obj, iv):
+    iv = np.asarray(iv)
+    s = obj.shape
+    flag = np.ones(iv.shape[:-1], dtype=np.bool)
+    for k in xrange(3):
+        flag *= (iv[..., k] >= 0) * (iv[..., k] < s[k])
+    return flag
 
 def sq(x):
     return x ** 2
 
 def distance_to_center(M, u0, ac):
     return np.sum([mi + ac * u0i for mi, u0i in zip(M, u0)])
+
+def define_unit_vector(l, g):
+    cosl = np.cos(l)
+    return np.asarray([cosl * np.cos(g), cosl * np.sin(g), np.sin(l)])
