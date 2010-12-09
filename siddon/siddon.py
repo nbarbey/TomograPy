@@ -81,8 +81,8 @@ def projector(data, cube, obstacle=None):
     The data cube is updated in-place, so you should make a copy before
     calling projector.
 
-    Inputs
-    ------
+    Arguemnts
+    ---------
     data : 3d InfoArray
       Contains a concatenation of FitsArray images along a 3rd dimension.
       Each header keyword is a vector due to concatenation too.
@@ -93,8 +93,8 @@ def projector(data, cube, obstacle=None):
       stopped when the ray reaches a sphere of radius one (the Sun in solar
       tomography).
 
-    Output
-    ------
+    Returns
+    -------
     data : 3d InfoArray
        The updated data cube.
     """
@@ -115,8 +115,8 @@ def backprojector(data, cube, obstacle=None):
     The map cube is updated in-place, so you should make a copy before
     calling projector.
 
-    Inputs
-    ------
+    Arguemnts
+    ---------
     data : 3d InfoArray
       Contains a concatenation of FitsArray images along a 3rd dimension.
       Each header keyword is a vector due to concatenation too.
@@ -127,8 +127,8 @@ def backprojector(data, cube, obstacle=None):
       stopped when the ray reaches a sphere of radius one (the Sun in solar
       tomography).
 
-    Output
-    ------
+    Returns
+    -------
     cube : 3d InfoArray
        The updated map cube.
     """
@@ -149,8 +149,8 @@ def projector4d(data, cube, obstacle=None):
     The data cube is updated in-place, so you should make a copy before
     calling projector.
 
-    Inputs
-    ------
+    Arguemnts
+    ---------
     data : 3d InfoArray
       Contains a concatenation of FitsArray images along a 3rd dimension.
       Each header keyword is a vector due to concatenation too.
@@ -161,8 +161,8 @@ def projector4d(data, cube, obstacle=None):
       stopped when the ray reaches a sphere of radius one (the Sun in solar
       tomography).
 
-    Output
-    ------
+    Returns
+    -------
     data : 3d InfoArray
        The updated data cube.
     """
@@ -183,8 +183,8 @@ def backprojector4d(data, cube, obstacle=None):
     The map cube is updated in-place, so you should make a copy before
     calling projector.
 
-    Inputs
-    ------
+    Arguemnts
+    ---------
     data : 3d InfoArray
       Contains a concatenation of FitsArray images along a 3rd dimension.
       Each header keyword is a vector due to concatenation too.
@@ -195,8 +195,8 @@ def backprojector4d(data, cube, obstacle=None):
       stopped when the ray reaches a sphere of radius one (the Sun in solar
       tomography).
 
-    Output
-    ------
+    Returns
+    -------
     cube : 3d InfoArray
        The updated map cube.
     """
@@ -327,8 +327,8 @@ def centered_image(pshape, shape, dtype=np.float64):
     pshape : physical shape
     shape : shape in pixels
 
-    Output
-    ------
+    Returns
+    -------
     cube: 3d FitsArray
     """
     header = centered_image_header(pshape, shape, dtype=dtype)
@@ -348,6 +348,9 @@ def centered_stack(pshape, shape, n_images=1., radius=1.,
     return circular_trajectory_data(**header)
 
 def fov(obj, radius):
+    """
+    Find the field of view encompassing a 3d object map.
+    """
     if hasattr(obj, "header"):
         h = obj.header
     else:
@@ -362,6 +365,24 @@ def fov(obj, radius):
 
 # duplicate of C functions as python for testing purpose
 def rotation_matrix(lon, lat, rol):
+    """
+    Define the projection rotation matrix knowning rotation
+    angles.
+    
+    Arguments
+    ---------
+    lon: float
+      Longitude.
+    lat: float
+      Latitude.
+    rol: float
+      Roll angle.
+
+    Returns
+    -------
+    R: (3, 3) float array
+      The rotation matrix.
+    """
 
     cosln = np.cos(lon)
     sinln = np.sin(lon)
@@ -467,7 +488,7 @@ def full_rotation_matrix(data):
 
     Returns
     -------
-    Nothing, the data header is updated inplace.
+    Nothing, the data header is updated inplace with Ri_j keys.
     """
     h = data.header
     for i in xrange(3):
