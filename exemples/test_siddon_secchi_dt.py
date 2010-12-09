@@ -16,6 +16,13 @@ data = siddon.solar.concatenate(
                )
      for obs in obsrvtry])
 data = siddon.solar.sort_data_array(data)
+# scale A and B images
+# the ratio of sensitivity between EUVI A and B
+calibration_ba = {171:0.902023, 195:0.974536, 284:0.958269, 304:1.05954}
+for i in xrange(data.shape[-1]):
+    if data.header['OBSRVTRY'][i] == 'STEREO_B':
+        data[..., i] /= calibration_ba[data.header['WAVELNTH'][i]]
+
 # make sure it is 64 bits data
 data.header['BITPIX'][:] = -64
 # cube
