@@ -227,9 +227,9 @@ static PyObject *call_siddon%(suffix)s(PyObject *self, PyObject *args)
   lat = (PyArrayObject*)PyDict_GetItemString(header, "LAT");
   rol = (PyArrayObject*)PyDict_GetItemString(header, "ROL");
   d = (PyArrayObject*)PyDict_GetItemString(header, "D");
-  xd = (PyArrayObject*)PyDict_GetItemString(header, "XD");
-  yd = (PyArrayObject*)PyDict_GetItemString(header, "YD");
-  zd = (PyArrayObject*)PyDict_GetItemString(header, "ZD");
+  xd = (PyArrayObject*)PyDict_GetItemString(header, "M0");
+  yd = (PyArrayObject*)PyDict_GetItemString(header, "M1");
+  zd = (PyArrayObject*)PyDict_GetItemString(header, "M2");
   cdelt1 = (PyArrayObject*)PyDict_GetItemString(header, "CDELT1");
   cdelt2 = (PyArrayObject*)PyDict_GetItemString(header, "CDELT2");
   crpix1 = (PyArrayObject*)PyDict_GetItemString(header, "CRPIX1");
