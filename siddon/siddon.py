@@ -582,21 +582,6 @@ def map_borders(h):
     Mmax = Mmin + pshape
     array_to_dict(h, "Mmax", Mmax)
 
-def trace_ray(data, obj):
-    """
-    perform ray tracing.
-    """
-    map_borders(obj.header)
-    full_rotation_matrix(data)
-    u = full_unit_vector(data)
-    flag, p, a1, amin = intersect_cube(data, obj, u)
-    update, iv, D = initialize_raytracing(data, obj, u, p, a1, amin)
-    ac = amin.copy()
-    keep_iterating = in_obj(obj, iv)
-    # loop while still some ray inside
-    while np.any(keep_iterating):
-        return
-
 def intersect_cube(data, obj, u):
     """
     Flag the image pixels that intersect the cube.
