@@ -150,7 +150,7 @@ def group_sum(ind, cube, data):
     def matvec(x):
         out = np.zeros(shapeout)
         for i, j, k in zip(ind1, ind2, np.arange(len(ind1))):
-            out[..., k] += x[..., i:j].sum(axis=-1)
+            out[..., k] = x[..., i:j].sum(axis=-1)
         return out
     def rmatvec(x):
         out = np.zeros(shapein)
