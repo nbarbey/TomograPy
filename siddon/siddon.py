@@ -262,7 +262,7 @@ def centered_cubic_map_header(pshape, shape, dtype=np.float64):
         header['CRVAL' + str(i + 1)] = 0.
     return header
 
-def centered_cubic_map(pshape, shape, dtype=np.float64):
+def centered_cubic_map(pshape, shape, fill=0., dtype=np.float64):
     """
     Generate a centered cubic map header
 
@@ -277,7 +277,9 @@ def centered_cubic_map(pshape, shape, dtype=np.float64):
     """
     header = centered_cubic_map_header(pshape, shape, dtype=dtype)
     # generate cube and exit
-    return fa.fitsarray_from_header(header)
+    map = fa.fitsarray_from_header(header)
+    map[:] = fill
+    return map
 
 def centered_image_header(pshape, shape, dtype=np.float64):
     """
@@ -318,7 +320,7 @@ def centered_image_header(pshape, shape, dtype=np.float64):
         header['CRVAL' + str(i + 1)] = 0.
     return header
 
-def centered_image(pshape, shape, dtype=np.float64):
+def centered_image(pshape, shape, fill=0., dtype=np.float64):
     """
     Generate a centered cubic map.
 
@@ -332,10 +334,12 @@ def centered_image(pshape, shape, dtype=np.float64):
     cube: 3d FitsArray
     """
     header = centered_image_header(pshape, shape, dtype=dtype)
-    return fa.fitsarray_from_header(header)
+    im = fa.fitsarray_from_header(header)
+    im[:] = fill
+    return im
 
 def centered_stack(pshape, shape, n_images=1., radius=1.,
-                   min_lon=0., max_lon=np.pi, dtype=np.float64):
+                   min_lon=0., max_lon=np.pi, fill=0., dtype=np.float64):
     """
     Generate a stack with centered image and circular trajectory data.
     """
@@ -345,7 +349,9 @@ def centered_stack(pshape, shape, n_images=1., radius=1.,
     header.update({'radius':radius})
     header.update({'min_lon':min_lon})
     header.update({'max_lon':max_lon})
-    return circular_trajectory_data(**header)
+    data = circular_trajectory_data(**header)
+    data[:] = fill
+    return data
 
 def fov(obj, radius):
     """
