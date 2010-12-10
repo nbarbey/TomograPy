@@ -140,7 +140,9 @@ def object_from_header(header, **kwargs):
         dtype = np.float64
     dtype = header.pop('dtype', dtype)
     dtype = kwargs.pop('dtype', dtype)
+    fill = kwargs.pop('fill', 0.)
     obj = Object(shape, header=header, dtype=dtype, **kwargs)
+    obj[:] = fill
     return obj
 
 def spherical_object(**kargs):
