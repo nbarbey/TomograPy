@@ -108,9 +108,16 @@ def update_header(array):
 def convert_time(time_str):
     # optionnaly remove Z
     time_str = time_str.rstrip("Z")
+    # rmove white spaces if any
+    time_str = time_str.rstrip(" ")
+    time_str = time_str.lstrip(" ")
     dpos = time_str.rfind(".")
     # remove fraction of seconds and add them afterwards
-    time_str, sec_float = time_str[:dpos], float(time_str[dpos:])
+    if dpos == -1:
+        # no fraction of seconds
+        time_str, sec_float = time_str, 0.
+    else:
+        time_str, sec_float = time_str[:dpos], float(time_str[dpos:])
     format = '%Y-%m-%dT%H:%M:%S'
     current_time = time.strptime(time_str, format)
     current_time = time.mktime(current_time)
