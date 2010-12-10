@@ -122,6 +122,8 @@ def circular_trajectory_data(**kargs):
         images[-1].update('LON', lon)
         images[-1].update('D', radius)
     data = fa.infoarrays2infoarray(images)
+    # set values to zeros
+    data[:] = 0.
     # enforce some dtypes
     for k in ('NAXIS', 'NAXIS1', 'NAXIS2'):
         data.header[k] = data.header[k].astype(np.int32)
