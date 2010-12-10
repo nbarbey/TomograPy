@@ -9,13 +9,13 @@ header = {'SIMPLE':True,'BITPIX':-64,
           'CDELT1':0.02, 'CDELT2':0.02, 'CDELT3':0.02,
           'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
 obj = siddon.simu.object_from_header(header)
-obj[:] = siddon.phantom.shepp_logan(obj.shape)
-#obj[:] = 1.
+#obj[:] = siddon.phantom.shepp_logan(obj.shape)
+obj[:] = 1.
 # data 
 image_header = {'n_images':17,
                 'SIMPLE':True, 'BITPIX':-64,
                 'NAXIS1':128, 'NAXIS2':128,
-                'CRPIX1':64, 'CRPIX2':64,
+                'CRPIX1':64., 'CRPIX2':64.,
                 'CDELT1':12e-5, 'CDELT2':12e-5,
                 'CRVAL1':0., 'CRVAL2':0.,
                 }
