@@ -42,17 +42,10 @@ def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
         update_header(fits_array)
         fits_array = fits_array.T
         if i == 0:
-            data = fa.InfoArray(fits_array.shape + (len(files),), header=dict(fits_array.header))
-            for k in data.header.keys():
-                if np.isscalar(data.header[k]):
-                    data.header[k] = np.asarray((data.header[k], ))
+            data = fa.InfoArray(fits_array.shape + (len(files),), header=[dict(fits_array.header),])
         data[..., i] = fits_array
         if i != 0:
-            for k in fits_array.header.keys():
-                if np.isscalar(fits_array.header[k]):
-                    data.header[k] = np.concatenate([data.header[k], np.asarray((fits_array.header[k], ))])
-                else:
-                    data.header[k] = np.concatenate([data.header[k], fits_array.header[k]])
+            data.header.append(dict(fits_array.header))
     data = data.astype(dtype)
     return data
 
