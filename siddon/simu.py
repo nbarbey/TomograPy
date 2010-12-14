@@ -125,8 +125,8 @@ def circular_trajectory_data(**kargs):
     # set values to zeros
     data[:] = 0.
     # enforce some dtypes
-    for k in ('NAXIS', 'NAXIS1', 'NAXIS2'):
-        data.header[k] = data.header[k].astype(np.int32)
+    #for k in ('NAXIS', 'NAXIS1', 'NAXIS2'):
+    #    data.header[k] = data.header[k].astype(np.int32)
     return data
 
 def object_from_header(header, **kwargs):
