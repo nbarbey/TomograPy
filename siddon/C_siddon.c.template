@@ -422,7 +422,7 @@ void get_pabs(CTYPE p[NDIM], CTYPE pabs[NDIM])
 {
   unsigned int k;
   for(k = 0; k < NDIM ; k++)
-    pabs[k] = abs(p[k]);
+    pabs[k] = fabs(p[k]);
 }
 
 void get_update(CTYPE u0[NDIM], int update [NDIM])
