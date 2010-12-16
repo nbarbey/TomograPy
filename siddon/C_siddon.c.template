@@ -232,7 +232,7 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args)
   map_header mh;
   image_header ih;
   CTYPE lambda, gamma;
-  CTYPE u0[NDIM], u2[NDIM];
+  CTYPE u0[NDIM];
   /* Parse tuples separately since args will differ between C fcns */
   if (!PyArg_ParseTuple(args, "O!O!O!O!", &PyArray_Type, &data,
 			&PyArray_Type, &map, &PyArray_Type, &mask, &PyArray_Type, &py_id))
@@ -372,7 +372,6 @@ void image_projector(PyArrayObject * data, PyArrayObject *  map, PyArrayObject *
   unsigned int id[NDIM];
   CTYPE lambda, gamma;
   /* normalized direction vector in image referentiel */
-  CTYPE u2[NDIM];
   /* in solar referentiel */
   CTYPE u0[NDIM];
 
