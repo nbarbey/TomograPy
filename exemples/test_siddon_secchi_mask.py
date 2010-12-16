@@ -7,15 +7,15 @@ import siddon
 from siddon.solar import read_data
 # data
 obsrvtry = ('STEREO_A', 'STEREO_B')
-dataA, dataB =     [read_data(os.path.join(os.getenv('HOME'), 'data', 'siddon', '171dec08'), 
-               bin_factor=16.,
+data = siddon.solar.concatenate(
+    [read_data(os.path.join(os.getenv('HOME'), 'data', 'siddon', '171dec08'), 
+               bin_factor=4.,
                obsrvtry=obs,
                time_window=['2008-12-01T00:00:00.000', 
                             '2008-12-15T00:00:00.000'],
-               time_step=16 * 3600.
+               time_step=8 * 3600.
                )
-     for obs in obsrvtry]
-data = siddon.solar.concatenate([dataA, dataB])
+     for obs in obsrvtry])
 
 data = siddon.solar.sort_data_array(data)
 # scale A and B images
@@ -31,11 +31,14 @@ for i in xrange(data.shape[-1]):
 # cube
 cube = siddon.siddon.centered_cubic_map(3, 64, fill=0.)
 # model
-kwargs = {'obj_rmin':1., 'obj_rmax':1.5, 'data_rmin':0.66, 'data_rmax':1.1,
-          'mask_negative':False}
+kwargs = {'obj_rmin':1., 'obj_rmax':1.5, 'data_rmin':1., 'data_rmax':1.3,
+          'mask_negative':False, 'mask_nan':True}
 P, D, obj_mask, data_mask = siddon.models.srt(data, cube, **kwargs)
+# apply mask to data
+data *= (1 - data_mask)
+data[np.isnan(data)] = 0.
 # hyperparameters
-hypers = cube.ndim * (1e-1, )
+hypers = cube.ndim * (1e0, )
 # inversion
 # expected time
 b = data.ravel()
@@ -49,4 +52,5 @@ sol = lo.acg(P, b, D, hypers, maxiter=100)
 print(time.time() - t)
 # reshape result
 fsol = siddon.fa.asfitsarray(sol.reshape(cube.shape), header=cube.header)
+siddon_path = os.path.join(os.getenv('HOME'), 'data', 'siddon')
 fsol.tofits(os.path.join(siddon_path, "output", "test_siddon_secchi_mask.fits"))
