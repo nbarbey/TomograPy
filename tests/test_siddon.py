@@ -37,6 +37,20 @@ def test_projector():
         for obj_h in object_headers:
             yield check_projector, im_h, obj_h
 
+
+# check full unit vector
+def check_full_unit_vector(im_h):
+    data = siddon.simu.circular_trajectory_data(**im_h)
+    u = siddon.siddon.C_full_unit_vector(data)
+    upy = siddon.siddon.full_unit_vector(data)
+    assert_array_equal(u, upy)
+
+def test_full_unit_vector():
+    for im_h in image_headers:
+        yield check_full_unit_vector, im_h
+
+# test that the good value is returned from a minimal projection
+# --------------------------------------------------------------
 obj0 = siddon.simu.object_from_header(object_headers64[0])
 obj0[:] = 1.
 
