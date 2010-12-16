@@ -6,7 +6,7 @@ import fitsarray as fa
 from siddon import dataarray_from_header, backprojector, projector
 from siddon import backprojector4d, projector4d
 
-def siddon_lo(data_header, cube_header, obstacle=None):
+def siddon_lo(data_header, cube_header, **kwargs):
     """
     A linear operator performing projection and backprojection using
     Siddon.
@@ -19,17 +19,17 @@ def siddon_lo(data_header, cube_header, obstacle=None):
     def matvec(x):
         y = dataarray_from_header(data_header)
         y[:] = 0.
-        projector(y, x, obstacle=obstacle)
+        projector(y, x, **kwargs)
         return y
     def rmatvec(x):
         y = fa.fitsarray_from_header(cube_header)
         y.header = dict(y.header)
         y[:] = 0.
-        backprojector(x, y, obstacle=obstacle)
+        backprojector(x, y, **kwargs)
         return y
     return lo.ndsubclass(xin=cube, xout=data, matvec=matvec, rmatvec=rmatvec, dtype=data.dtype)
 
-def siddon4d_lo(data_header, cube_header, obstacle=None):
+def siddon4d_lo(data_header, cube_header, **kwargs):
     """
     A linear operator performing projection and backprojection using
     Siddon 4-dimensional variation.
@@ -41,11 +41,11 @@ def siddon4d_lo(data_header, cube_header, obstacle=None):
     def matvec(x):
         y = dataarray_from_header(data_header)
         y[:] = 0
-        projector4d(y, x, obstacle=obstacle)
+        projector4d(y, x, **kwargs)
         return y
     def rmatvec(x):
         y = fa.fitsarray_from_header(cube_header)
         y[:] = 0
-        backprojector4d(x, y, obstacle=obstacle)
+        backprojector4d(x, y, **kwargs)
         return y
     return lo.ndsubclass(xin=cube, xout=data, matvec=matvec, rmatvec=rmatvec, dtype=data.dtype)

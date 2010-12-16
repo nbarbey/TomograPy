@@ -44,10 +44,10 @@ def srt(data, cube, **kwargs):
 
     """
     # Model : it is Solar rotational tomography, so obstacle="sun".
-    P = siddon_lo(data.header, cube.header, obstacle="sun")
+    data_mask = solar.define_data_mask(data, **kwargs)
+    P = siddon_lo(data.header, cube.header, mask=data_mask, obstacle="sun")
     D = [lo.diff(cube.shape, axis=i) for i in xrange(cube.ndim)]
     P, D, obj_mask = _apply_object_mask(P, D, cube, **kwargs)
-    P, data_mask = _apply_data_mask(P, data, **kwargs)
     return P, D, obj_mask, data_mask
 
 def _apply_object_mask(P, D, cube, **kwargs):

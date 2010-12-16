@@ -72,7 +72,7 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args);
 static PyObject *call_full_unit_vector%(suffix)s(PyObject *self, PyObject *args);
 static PyObject *call_image_unit_vector%(suffix)s(PyObject *self, PyObject *args);
 /* image projection */
-inline void image_projector(PyArrayObject * , PyArrayObject * , unsigned int , image_header *, map_header *);
+inline void image_projector(PyArrayObject * , PyArrayObject * , PyArrayObject * , unsigned int , image_header *, map_header *);
 /* Compute integration along one line of sight. */
 inline void ray_projector(CTYPE[NDIM], CTYPE[NDIM], PyArrayObject*, unsigned int[NDIM], PyArrayObject*, map_header *);
 /* get the steps between each kind of intersection. */
@@ -130,7 +130,7 @@ inline void define_rotated_unit_vector(CTYPE, CTYPE, CTYPE[NDIM][NDIM], CTYPE[ND
 /* Comupte the distance from the map cube reference pixel (center). */
 inline CTYPE distance_to_center(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
 /* Perform projection / backprojection of an image set. */
-inline static PyObject * full_projector(PyArrayObject*, PyArrayObject*);
+inline static PyObject * full_projector(PyArrayObject*, PyArrayObject*, PyArrayObject *);
 /* to get a dict value and recast it into CTYPE*/
 inline CTYPE get_dict_ctype(PyObject * , char [8]);
 inline void PyDict_AsMapHeader(PyObject * , map_header *);
@@ -166,38 +166,42 @@ void init_C_siddon%(suffix)s()  {
 static PyObject *call_full_projector%(suffix)s(PyObject *self, PyObject *args)
 {
   /* Input and output matrices to be extracted from args */
-  PyArrayObject *data, *map;
+  PyArrayObject *data, *map, *mask;
 
   /* Parse tuples separately since args will differ between C fcns */
-  if (!PyArg_ParseTuple(args, "O!O!", &PyArray_Type, &data,
-			&PyArray_Type, &map))
+  if (!PyArg_ParseTuple(args, "O!O!O!", &PyArray_Type, &data,
+			&PyArray_Type, &map, &PyArray_Type, &mask))
     return NULL;
   /*Raise errors if input matrix is missing*/
   if (NULL == data)
     return NULL;
   if (NULL == map)
     return NULL;
+  if (NULL == mask)
+    return NULL;
 
   /* Siddon for each time index */
-  return full_projector(data, map);
+  return full_projector(data, map, mask);
 }
 
 static PyObject *call_image_projector%(suffix)s(PyObject *self, PyObject *args)
 {
   /* Input and output matrices to be extracted from args */
-  PyArrayObject *data, *map;
+  PyArrayObject *data, *map, *mask;
   PyObject * headers, * py_image_header, * py_map_header;
   unsigned int t=0;
   map_header mh;
   image_header ih;
   /* Parse tuples separately since args will differ between C fcns */
-  if (!PyArg_ParseTuple(args, "O!O!i", &PyArray_Type, &data,
-			&PyArray_Type, &map, &t))
+  if (!PyArg_ParseTuple(args, "O!O!O!i", &PyArray_Type, &data,
+			&PyArray_Type, &map, &PyArray_Type, &mask, &t))
     return NULL;
   /*Raise errors if input matrix is missing*/
   if (NULL == data)
     return NULL;
   if (NULL == map)
+    return NULL;
+  if (NULL == mask)
     return NULL;
 
   /* Get data header */
@@ -214,14 +218,14 @@ static PyObject *call_image_projector%(suffix)s(PyObject *self, PyObject *args)
   PyDict_AsMapHeader(py_map_header, &mh);
 
   /* Siddon for each time index */
-  image_projector(data, map, t, &ih, &mh);
+  image_projector(data, map, mask, t, &ih, &mh);
   Py_RETURN_NONE;
 }
 
 static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args)
 {
   /* Input and output matrices to be extracted from args */
-  PyArrayObject *data, *map, *py_id;
+  PyArrayObject *data, *map, *mask, *py_id;
   PyObject * headers, * py_image_header, * py_map_header;
   unsigned int k;
   unsigned int id[NDIM] = {0, 0, 0};
@@ -230,13 +234,15 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args)
   CTYPE lambda, gamma;
   CTYPE u0[NDIM], u2[NDIM];
   /* Parse tuples separately since args will differ between C fcns */
-  if (!PyArg_ParseTuple(args, "O!O!O!", &PyArray_Type, &data,
-			&PyArray_Type, &map, &PyArray_Type, &py_id))
+  if (!PyArg_ParseTuple(args, "O!O!O!O!", &PyArray_Type, &data,
+			&PyArray_Type, &map, &PyArray_Type, &mask, &PyArray_Type, &py_id))
     return NULL;
   /*Raise errors if input matrix is missing*/
   if (NULL == data)
     return NULL;
   if (NULL == map)
+    return NULL;
+  if (NULL == mask)
     return NULL;
   if (NULL == py_id)
     return NULL;
@@ -244,6 +250,10 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args)
   /* get detector index */
   for(k = 0; k < NDIM; k++)
     id[k] = UINT_IND1(py_id, k);
+
+  /* if mask equal 1 do nothing */
+  if (IND3(mask, id) == 1)
+    Py_RETURN_NONE;
 
   /* Get data header */
   headers = NULL;
@@ -318,7 +328,7 @@ static PyObject *call_image_unit_vector%(suffix)s(PyObject *self, PyObject *args
 
 /* C functions */
 
-static PyObject * full_projector(PyArrayObject * data, PyArrayObject * map)
+static PyObject * full_projector(PyArrayObject * data, PyArrayObject * map, PyArrayObject * mask)
 {
   /* declarations */
   PyObject * py_map_header, *headers, *py_image_header;
@@ -350,14 +360,14 @@ static PyObject * full_projector(PyArrayObject * data, PyArrayObject * map)
   #pragma omp parallel default (shared) private(t)
   #pragma omp for
   for(t = 0 ; t < data->dimensions[2] ; t++){
-    image_projector(data, map, t, &ih_array[t], &mh);
+    image_projector(data, map, mask, t, &ih_array[t], &mh);
   }
   Py_END_ALLOW_THREADS
   free(ih_array);
   Py_RETURN_NONE;
 }
 
-void image_projector(PyArrayObject * data, PyArrayObject *  map, unsigned int t, image_header * ih, map_header * mh)
+void image_projector(PyArrayObject * data, PyArrayObject *  map, PyArrayObject * mask, unsigned int t, image_header * ih, map_header * mh)
 {
   unsigned int id[NDIM];
   CTYPE lambda, gamma;
@@ -377,8 +387,8 @@ void image_projector(PyArrayObject * data, PyArrayObject *  map, unsigned int t,
     gamma = (id[0] - ih->s[0]) * ih->p[0];
     for(id[1] = 0 ; id[1] < n2 ; id[1]++)
     {
-      /* skip computation if the value is a NaN */
-      if((isNaN(IND3(data, id)) == 0))
+      /* skip computation if the mask is equal to 1 at current detector index */
+      if((IND3(mask, id)) == 0)
       {
 	lambda = (id[1] - ih->s[1]) * ih->p[1];
 	define_rotated_unit_vector(lambda, gamma, ih->R, u0);

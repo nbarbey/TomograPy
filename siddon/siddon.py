@@ -77,7 +77,7 @@ for method in c_methods:
         del exec_str
 
 # projector
-def projector(data, cube, obstacle=None):
+def projector(data, cube, mask=None, obstacle=None):
     """
     Project a cubic map into a data cube using the Siddon algorithm.
     The data cube is updated in-place, so you should make a copy before
@@ -100,16 +100,18 @@ def projector(data, cube, obstacle=None):
     data : 3d InfoArray
        The updated data cube.
     """
+    if mask is None:
+        mask = np.zeros(data.shape)
     check_projector_inputs(data, cube)
     my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"pj"
                       }
-    proj_str = "full_projector" + suffix_str + "(data, cube)"
+    proj_str = "full_projector" + suffix_str + "(data, cube, mask)"
     exec(proj_str % my_siddon_dict)
     return data
 
-def backprojector(data, cube, obstacle=None):
+def backprojector(data, cube, mask=None, obstacle=None):
     """
     Backproject a data cube into a cubic map using the Siddon algorithm.
     The map cube is updated in-place, so you should make a copy before
@@ -132,12 +134,14 @@ def backprojector(data, cube, obstacle=None):
     cube : 3d InfoArray
        The updated map cube.
     """
+    if mask is None:
+        mask = np.zeros(data.shape)
     check_projector_inputs(data, cube)
     my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"bpj"
                       }
-    proj_str = "full_projector" + suffix_str + "(data, cube)"
+    proj_str = "full_projector" + suffix_str + "(data, cube, mask)"
     exec(proj_str % my_siddon_dict)
     return cube
 
@@ -164,12 +168,14 @@ def projector4d(data, cube, obstacle=None):
     data : 3d InfoArray
        The updated data cube.
     """
+    if mask is None:
+        mask = np.zeros(data.shape)
     check_projector_inputs(data, cube)
     my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"pjt"
                       }
-    proj_str = "full_projector" + suffix_str + "(data, cube)"
+    proj_str = "full_projector" + suffix_str + "(data, cube, mask)"
     exec(proj_str % my_siddon_dict)
     return data
 
@@ -196,12 +202,14 @@ def backprojector4d(data, cube, obstacle=None):
     cube : 3d InfoArray
        The updated map cube.
     """
+    if mask is None:
+        mask = np.zeros(data.shape)
     check_projector_inputs(data, cube)
     my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"bpjt"
                       }
-    proj_str = "full_projector" + suffix_str + "(data, cube)"
+    proj_str = "full_projector" + suffix_str + "(data, cube, mask)"
     exec(proj_str % my_siddon_dict)
     return cube
 
