@@ -64,7 +64,7 @@ typedef struct
 /*-----------------------------------------------------------------------*/
 /* Functions declarations */
 /* Python wrapper */
-void init_C_siddon%(suffix)s();
+void init_C_siddon%(suffix)s(void);
 static PyObject *call_full_projector%(suffix)s(PyObject *self, PyObject *args);
 static PyObject *call_image_projector%(suffix)s(PyObject *self, PyObject *args);
 static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args);
@@ -261,11 +261,10 @@ static PyObject * full_projector(PyArrayObject * data, PyArrayObject * map)
   PyObject * py_map_header, *headers, *py_image_header;
   /* c map header*/
   map_header mh;
-  image_header ih;
   image_header * ih_array;
 
   /* loop incremented integers*/
-  unsigned int t;
+  int t;
   /* Get data header */
   headers = NULL;
   headers = PyObject_GetAttrString((PyObject*)data, "header");
