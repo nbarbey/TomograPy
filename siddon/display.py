@@ -97,7 +97,7 @@ def display_object(obj):
     plt.draw()
 
 def _max_divider(n):
-    divmax = np.ceil(np.sqrt(n))
+    divmax = int(np.ceil(np.sqrt(n)))
     divs = []
     for i in xrange(divmax):
         if np.remainder(n, i) == 0:
