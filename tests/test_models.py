@@ -25,7 +25,7 @@ def check_model(model, im_h, obj_h):
         new_obj *= (1 - obj_mask)
         data[:] = (P * new_obj.ravel()).reshape(data.shape)
         hypers = new_obj.ndim * (1e-10, )
-        sol = lo.acg(P, data.ravel(), D, hypers=hypers, tol=1e-10)
+        sol = lo.acg(P, data.ravel(), D, hypers=hypers, tol=1e-20)
         sol = fa.asfitsarray(sol.reshape(obj_mask.shape), header=obj.header)
         assert_almost_equal(sol, new_obj, decimal=1)
 
