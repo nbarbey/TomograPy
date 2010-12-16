@@ -705,13 +705,13 @@ void PyDict_AsMapHeader(PyObject * dict, map_header * ch)
   ch->p[1] = get_dict_ctype(dict, "CDELT2");
   ch->p[2] = get_dict_ctype(dict, "CDELT3");
 
-  ch->min[0] = get_dict_ctype(dict, "Mmin0");
-  ch->min[1] = get_dict_ctype(dict, "Mmin1");
-  ch->min[2] = get_dict_ctype(dict, "Mmin2");
+  ch->min[0] = get_dict_ctype(dict, "MMIN0");
+  ch->min[1] = get_dict_ctype(dict, "MMIN1");
+  ch->min[2] = get_dict_ctype(dict, "MMIN2");
 
-  ch->max[0] = get_dict_ctype(dict, "Mmax0");
-  ch->max[1] = get_dict_ctype(dict, "Mmax1");
-  ch->max[2] = get_dict_ctype(dict, "Mmax2");
+  ch->max[0] = get_dict_ctype(dict, "MMAX0");
+  ch->max[1] = get_dict_ctype(dict, "MMAX1");
+  ch->max[2] = get_dict_ctype(dict, "MMAX2");
 
   ch->d[0] = get_dict_ctype(dict, "PSHAPE0");
   ch->d[1] = get_dict_ctype(dict, "PSHAPE1");
