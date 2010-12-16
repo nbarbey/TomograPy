@@ -1,8 +1,9 @@
 """
 Regroup functions to easily perform simulations.
 """
+import copy
 import numpy as np
-
+import siddon
 import fitsarray as fa
 
 default_image_dict = {'NAXIS':2, 'NAXIS1':1, 'NAXIS2':1,
@@ -21,22 +22,25 @@ default_object_dict = {'NAXIS':3, 'NAXIS1':1, 'NAXIS2':1, 'NAXIS3':1,
 object_keys = default_object_dict.keys()
 default_object = fa.fitsarray_from_header(default_object_dict)
 
-class Image(fa.FitsArray):
+class Image(fa.InfoArray):
     """
     A subclass of FitsArray with mandatory keywords defining an image
     """
-    def __new__(subtype, shape, dtype=float, buffer=None, offset=0,
+    def __new__(subtype, shape, data=None, dtype=float, buffer=None, offset=0,
                 strides=None, order=None, header=None):
-        obj = fa.FitsArray.__new__(subtype, shape, dtype, buffer, offset,
-                                   strides, order, header=header)
+        if header is None:
+            header = copy.copy(default_image_dict)
+        obj = fa.InfoArray.__new__(subtype, shape=shape, data=data, 
+                                   dtype=dtype, buffer=buffer, offset=offset,
+                                   strides=strides, order=order, header=header)
         # look for mandatory keywords
         for k in image_keys:
             if not obj.header.has_key(k):
-                obj.header.update(k, default_image_dict[k])
+                obj.header[k] = default_image_dict[k]
         return obj
 
-    def update(self, key, value, **kargs):
-        self.header.update(key, value, **kargs)
+    def update(self, key, value):
+        self.header[key] = value
         if key == 'LAT' or key == 'LON' or key == 'D':
             self._update_from_spherical(key, value)
         elif key == 'M0' or key == 'M1' or key == 'M2':
@@ -46,17 +50,17 @@ class Image(fa.FitsArray):
         lon = self.header['LON']
         lat = self.header['LAT']
         d = self.header['D']
-        self.header.update('M0', d * np.cos(lat) * np.cos(lon))
-        self.header.update('M1', d * np.cos(lat) * np.sin(lon))
-        self.header.update('M2', d * np.sin(lat))
+        self.header['M0'] = d * np.cos(lat) * np.cos(lon)
+        self.header['M1'] = d * np.cos(lat) * np.sin(lon)
+        self.header['M2'] = d * np.sin(lat)
 
     def _update_from_cartesian(self, key, value):
         xd = self.header('M0')
         yd = self.header('M1')
         zd = self.header('M2')
-        self.header.update('LON', np.arctan2(yd, xd))
-        self.header.update('LAT', np.arctan2(np.sqrt(xd ** 2 + yd ** 2), zd))
-        self.header.update('D', np.sqrt(xd ** 2 + yd ** 2 + zd ** 2))
+        self.header['LON'] = np.arctan2(yd, xd)
+        self.header['LAT'] = np.arctan2(np.sqrt(xd ** 2 + yd ** 2), zd)
+        self.header['D'] = np.sqrt(xd ** 2 + yd ** 2 + zd ** 2)
 
 class Object(fa.FitsArray):
     """
@@ -64,14 +68,18 @@ class Object(fa.FitsArray):
     """
     def __new__(subtype, shape, dtype=float, buffer=None, offset=0,
                 strides=None, order=None, header=None):
+        if header is None:
+            header = copy.copy(default_object_dict)
+        # look for mandatory keywords
+        for k in object_keys:
+            if not header.has_key(k):
+                header.update(k, default_object_dict[k])
+        siddon.map_borders(header)
+
         obj = fa.FitsArray.__new__(subtype, shape, dtype=dtype,
                                    buffer=buffer, offset=offset,
                                    strides=strides, order=order,
                                    header=header)
-        # look for mandatory keywords
-        for k in object_keys:
-            if not obj.header.has_key(k):
-                obj.header.update(k, default_object_dict[k])
         return obj
 
 def circular_trajectory_data(**kargs):
@@ -118,15 +126,14 @@ def circular_trajectory_data(**kargs):
     for i, lon in enumerate(longitudes):
         header = kargs.copy()
         shape = header['NAXIS1'], header['NAXIS2']
-        images.append(Image(shape, header=header, dtype=dtype))
+        images.append(Image(shape, header=dict(header), dtype=dtype))
         images[-1].update('LON', lon)
         images[-1].update('D', radius)
     data = fa.infoarrays2infoarray(images)
     # set values to zeros
     data[:] = 0.
-    # enforce some dtypes
-    #for k in ('NAXIS', 'NAXIS1', 'NAXIS2'):
-    #    data.header[k] = data.header[k].astype(np.int32)
+    # compute rotation matrices
+    siddon.full_rotation_matrix(data)
     return data
 
 def object_from_header(header, **kwargs):
@@ -141,6 +148,7 @@ def object_from_header(header, **kwargs):
     dtype = header.pop('dtype', dtype)
     dtype = kwargs.pop('dtype', dtype)
     fill = kwargs.pop('fill', 0.)
+    siddon.map_borders(header)
     obj = Object(shape, header=header, dtype=dtype, **kwargs)
     obj[:] = fill
     return obj
