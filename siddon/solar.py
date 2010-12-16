@@ -3,6 +3,7 @@ Generic code for WCS compatible data.
 """
 import os
 import time
+import copy
 import pyfits
 import numpy as np
 import fitsarray as fa
@@ -238,8 +239,8 @@ def distance_to_sun_center(data):
     # loop on images
     for i in xrange(data.shape[-1]):
         # get axes
-        crpix1 = data.header['CRPIX1'][i]
-        crpix2 = data.header['CRPIX2'][i]
+        crpix1 = data.header[i]['CRPIX1']
+        crpix2 = data.header[i]['CRPIX2']
         y = (np.arange(data.shape[0]) - crpix1) / Rsun[i]
         x = (np.arange(data.shape[0]) - crpix2) / Rsun[i]
         # generate 2D repeated axes
@@ -251,9 +252,9 @@ def distance_to_sun_center(data):
 def compute_rsun(data):
     rsun = np.empty(data.shape[-1])
     for i in xrange(data.shape[-1]):
-        d = data.header['D'][i]
-        cdelt1 = data.header['CDELT1'][i]
-        cdelt2 = data.header['CDELT2'][i]
+        d = data.header[i]['D']
+        cdelt1 = data.header[i]['CDELT1']
+        cdelt2 = data.header[i]['CDELT2']
         if cdelt1 != cdelt2:
             raise ValueError('Meaningless if cdelts are not equal.')
         rsun[i] = np.arctan(1. / d) / cdelt1
@@ -265,7 +266,7 @@ def define_map_mask(cube, obj_rmin=None, obj_rmax=None, **kwargs):
     """
     obj_mask = np.zeros(cube.shape, dtype=bool)
     if obj_rmin is not None or obj_rmax is not None:
-        R = map_radius(cube)
+        R = map_radius(fa.asfitsarray(cube))
         if obj_rmin is not None:
             obj_mask[R < obj_rmin] = 1
         if obj_rmax is not None:
@@ -290,27 +291,25 @@ def slice_data(data, s):
     """
     sd = 2 * (slice(None, None, None), ) + (s,)
     out = data[sd]
-    # copy header elements as it is not done usually
-    out.header = data.header.copy()
-    for k in data.header.keys():
-        out.header[k] = data.header[k][s].copy()
+    out.header = copy.copy(data.header[s])
     return out
 
 def concatenate(data_list):
     out = np.concatenate(data_list, axis=-1)
     # copy header and key values
-    header = data_list[0].header.copy()
-    for k in header.keys():
-        header[k] = data_list[0].header[k].copy()
-    # concatenate key values
-    for k in header.keys():
-        header[k] = np.concatenate([d.header[k] for d in data_list])
+    header = []
+    for d in data_list:
+        header += d.header
     out = fa.asinfoarray(out, header)
     return out
 
+def get_times(data):
+    return [convert_time(h['DATE_OBS']) for h in data.header]
+    
+
 def sort_data_array(data):
+    times = get_times(data)
     # sort in time
-    times = [convert_time(t) for t in data.header['DATE_OBS']]
     ind = np.argsort(times)
     data_list = []
     for i in ind:
@@ -321,7 +320,7 @@ def sort_data_array(data):
 
 def temporal_groups_indexes(data, dt_min):
     # XXX buggy if no groups !!!
-    times = [convert_time(t) for t in data.header['DATE_OBS']]
+    times = get_times(data)
     ind1 = list(np.where(np.diff(times) < dt_min)[0])
     return ind1
 
