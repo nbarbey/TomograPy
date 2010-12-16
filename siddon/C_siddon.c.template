@@ -68,6 +68,9 @@ void init_C_siddon%(suffix)s(void);
 static PyObject *call_full_projector%(suffix)s(PyObject *self, PyObject *args);
 static PyObject *call_image_projector%(suffix)s(PyObject *self, PyObject *args);
 static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args);
+
+static PyObject *call_full_unit_vector%(suffix)s(PyObject *self, PyObject *args);
+static PyObject *call_image_unit_vector%(suffix)s(PyObject *self, PyObject *args);
 /* image projection */
 inline void image_projector(PyArrayObject * , PyArrayObject * , unsigned int , image_header *, map_header *);
 /* Compute integration along one line of sight. */
@@ -121,6 +124,9 @@ inline void compare(CTYPE*, CTYPE*, CTYPE, CTYPE);
 inline void define_unit_vector(CTYPE, CTYPE, CTYPE[NDIM]);
 /* Apply a rotation matrix to a vector */
 inline void apply_rotation(CTYPE[NDIM][NDIM] , CTYPE[NDIM], CTYPE[NDIM]);
+/* Get directly rotated unit vector*/
+/* gamma, lambda, R, u0 */
+inline void define_rotated_unit_vector(CTYPE, CTYPE, CTYPE[NDIM][NDIM], CTYPE[NDIM]);
 /* Comupte the distance from the map cube reference pixel (center). */
 inline CTYPE distance_to_center(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
 /* Perform projection / backprojection of an image set. */
@@ -129,6 +135,11 @@ inline static PyObject * full_projector(PyArrayObject*, PyArrayObject*);
 inline CTYPE get_dict_ctype(PyObject * , char [8]);
 inline void PyDict_AsMapHeader(PyObject * , map_header *);
 inline void PyDict_AsImageHeader(PyObject * , image_header *);
+
+/*to get los direction vector */
+inline static PyObject * full_unit_vector(PyArrayObject * data, PyArrayObject * uarray);
+inline void image_unit_vector(PyArrayObject * data, PyArrayObject * uarray, unsigned int t, image_header * ih);
+
 
 /*============================================================================*/
 /* Functions code */
@@ -139,6 +150,8 @@ static PyMethodDef _C_siddon%(suffix)sMethods[] = {
   {"full_projector", call_full_projector%(suffix)s, METH_VARARGS},
   {"image_projector", call_image_projector%(suffix)s, METH_VARARGS},
   {"ray_projector", call_ray_projector%(suffix)s, METH_VARARGS},
+  {"full_unit_vector", call_full_unit_vector%(suffix)s, METH_VARARGS},
+  {"image_unit_vector", call_image_unit_vector%(suffix)s, METH_VARARGS},
   {NULL, NULL}     /* Sentinel - marks the end of this structure */
 };
 
@@ -247,9 +260,59 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args)
 
   gamma = (id[0] - ih.s[0]) * ih.p[0];
   lambda = (id[1] - ih.s[1]) * ih.p[1];
-  define_unit_vector(lambda, gamma, u2);
-  apply_rotation(ih.R, u2, u0);
+  define_rotated_unit_vector(lambda, gamma, ih.R, u0);
   ray_projector(ih.M, u0, data, id, map, &mh);
+  Py_RETURN_NONE;
+}
+
+
+static PyObject *call_full_unit_vector%(suffix)s(PyObject *self, PyObject *args)
+{
+  /* Input and output matrices to be extracted from args */
+  PyArrayObject *data, *uarray;
+
+  /* Parse tuples separately since args will differ between C fcns */
+  if (!PyArg_ParseTuple(args, "O!O!", &PyArray_Type, &data,
+			&PyArray_Type, &uarray))
+    return NULL;
+  /*Raise errors if input matrix is missing*/
+  if (NULL == data)
+    return NULL;
+  if (NULL == uarray)
+    return NULL;
+
+  /* Siddon for each time index */
+  return full_unit_vector(data, uarray);
+}
+
+static PyObject *call_image_unit_vector%(suffix)s(PyObject *self, PyObject *args)
+{
+  /* Input and output matrices to be extracted from args */
+  PyArrayObject *data, *uarray;
+  PyObject * headers, * py_image_header;
+  unsigned int t=0;
+  image_header ih;
+  /* Parse tuples separately since args will differ between C fcns */
+  if (!PyArg_ParseTuple(args, "O!O!i", &PyArray_Type, &data,
+			&PyArray_Type, &uarray, &t))
+    return NULL;
+  /*Raise errors if input matrix is missing*/
+  if (NULL == data)
+    return NULL;
+  if (NULL == uarray)
+    return NULL;
+
+  /* Get data header */
+  headers = NULL;
+  headers = PyObject_GetAttrString((PyObject*)data, "header");
+  if (NULL == headers)
+    return NULL;
+
+  py_image_header = PyList_GetItem(headers, t);
+  PyDict_AsImageHeader(py_image_header, &ih);
+
+  /* Siddon for each time index */
+  image_unit_vector(data, uarray, t, &ih);
   Py_RETURN_NONE;
 }
 
@@ -294,7 +357,7 @@ static PyObject * full_projector(PyArrayObject * data, PyArrayObject * map)
   Py_RETURN_NONE;
 }
 
-void image_projector(PyArrayObject * data, PyArrayObject *  map, unsigned int t, image_header * ih, map_header * ch)
+void image_projector(PyArrayObject * data, PyArrayObject *  map, unsigned int t, image_header * ih, map_header * mh)
 {
   unsigned int id[NDIM];
   CTYPE lambda, gamma;
@@ -318,9 +381,8 @@ void image_projector(PyArrayObject * data, PyArrayObject *  map, unsigned int t,
       if((isNaN(IND3(data, id)) == 0))
       {
 	lambda = (id[1] - ih->s[1]) * ih->p[1];
-	define_unit_vector(lambda, gamma, u2);
-	apply_rotation(ih->R, u2, u0);
-	ray_projector(ih->M, u0, data, id, map, ch);
+	define_rotated_unit_vector(lambda, gamma, ih->R, u0);
+	ray_projector(ih->M, u0, data, id, map, mh);
       }
     }
   }
@@ -331,7 +393,7 @@ void ray_projector(CTYPE M[NDIM],
 		   PyArrayObject * data,
 		   unsigned int id[NDIM],
 		   PyArrayObject * map,
-		   map_header * ch)
+		   map_header * mh)
 {
   /* distance of the current voxel to the detector   */
   CTYPE ac; 
@@ -357,16 +419,16 @@ void ray_projector(CTYPE M[NDIM],
   n[1] = map->dimensions[1];
   n[2] = map->dimensions[2];
 
-  get_intersection_parameters(ch, M, u0, a1, an);
+  get_intersection_parameters(mh, M, u0, a1, an);
   intersect_map(M, u0, a1, an, &amin, &amax);
   /* otherwise the ray does not go through the map */
   if(amin < amax)
   {
     /* loop initilization */
-    get_intersection_steps(ch, u0, p);
+    get_intersection_steps(mh, u0, p);
     get_pabs(p, pabs);
     get_update(u0, update);
-    get_voxel_index(ch, M, u0, amin, iv);
+    get_voxel_index(mh, M, u0, amin, iv);
     get_next_voxel_index(n, update, iv, next);
     get_intersection_distance(next, p, a1, amin, D);
     ac = amin;
@@ -378,14 +440,81 @@ void ray_projector(CTYPE M[NDIM],
   }
 }
 
-void get_intersection_parameters(map_header * ch, CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE a1[NDIM], CTYPE an[NDIM])
+static PyObject * full_unit_vector(PyArrayObject * data, PyArrayObject * uarray)
+{
+  /* declarations */
+  PyObject * headers, *py_image_header;
+  /* c map header*/
+  image_header * ih_array;
+
+  /* loop incremented integers*/
+  int t;
+  /* Get data header */
+  headers = NULL;
+  headers = PyObject_GetAttrString((PyObject*)data, "header");
+  if (NULL == headers)
+    return NULL;
+
+  /* allocate memory for array of image_headers*/
+  ih_array = (image_header*) malloc(data->dimensions[2] * sizeof(image_header));
+  for( t = 0 ; t < data->dimensions[2] ; t++)
+  {
+    py_image_header = PyList_GetItem(headers, t);
+    PyDict_AsImageHeader(py_image_header, &ih_array[t]);
+  }
+
+  /* Loop on the time / image dimension */
+  Py_BEGIN_ALLOW_THREADS
+  #pragma omp parallel default (shared) private(t)
+  #pragma omp for
+  for(t = 0 ; t < data->dimensions[2] ; t++){
+    image_unit_vector(data, uarray, t, &ih_array[t]);
+  }
+  Py_END_ALLOW_THREADS
+  free(ih_array);
+  Py_RETURN_NONE;
+}
+
+void image_unit_vector(PyArrayObject * data, PyArrayObject * uarray, unsigned int t, image_header * ih)
+{
+  unsigned int id[NDIM];
+  CTYPE lambda, gamma;
+  /* normalized direction vector in image referentiel */
+  /* in solar referentiel */
+  CTYPE u0[NDIM];
+
+  unsigned int n1 = (unsigned int)data->dimensions[0];
+  unsigned int n2 = (unsigned int)data->dimensions[1];
+  
+  id[2] = t;
+
+  /* loops on angles (detectors pixels) */
+  for(id[0] = 0 ; id[0] < n1 ; id[0]++)
+  {
+    gamma = (id[0] - ih->s[0]) * ih->p[0];
+    for(id[1] = 0 ; id[1] < n2 ; id[1]++)
+    {
+      /* skip computation if the value is a NaN */
+      if((isNaN(IND3(data, id)) == 0))
+      {
+	lambda = (id[1] - ih->s[1]) * ih->p[1];
+	define_rotated_unit_vector(lambda, gamma, ih->R, u0);
+	IND3t(uarray, id, 0) = u0[0];
+	IND3t(uarray, id, 1) = u0[1];
+	IND3t(uarray, id, 2) = u0[2];
+      }
+    }
+  }
+}
+
+void get_intersection_parameters(map_header * mh, CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE a1[NDIM], CTYPE an[NDIM])
 {
   unsigned int k;
   for(k = 0 ; k < NDIM ; k++)
   {
     if(u0[k] != 0){
-      a1[k] = (ch->min[k] - M[k]) / u0[k];
-      an[k] = (ch->max[k] - M[k]) / u0[k];}
+      a1[k] = (mh->min[k] - M[k]) / u0[k];
+      an[k] = (mh->max[k] - M[k]) / u0[k];}
     else{
       a1[k] = - INF;
       an[k] = INF;}
@@ -405,13 +534,13 @@ void intersect_map(CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE a1[NDIM], CTYPE an[NDIM]
   *pamax = min3(Imax[0], Imax[1], Imax[2]);
 }
 
-void get_intersection_steps(map_header * ch, CTYPE u0[NDIM], CTYPE p[NDIM])
+void get_intersection_steps(map_header * mh, CTYPE u0[NDIM], CTYPE p[NDIM])
 {
   unsigned int k;
   for(k = 0 ; k < NDIM ; k++)
   {
     if(u0[k] != 0)
-      p[k] = ch->p[k] / u0[k];
+      p[k] = mh->p[k] / u0[k];
     else
       p[k] = INF;
   }
@@ -431,15 +560,15 @@ void get_update(CTYPE u0[NDIM], int update [NDIM])
     update[k] = sign(u0[k]);    
 }
 
-void get_voxel_index(map_header * ch, CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE amin, int iv[NDIM])
+void get_voxel_index(map_header * mh, CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE amin, int iv[NDIM])
 {
   unsigned int k;
   CTYPE e[NDIM];
   for (k = 0; k < NDIM; k++)
   {
     e[k] = M[k] + amin * u0[k];
-    iv[k] = (unsigned int)( (e[k] - ch->min[k]) / ch->p[k]);
-    iv[k] -= (unsigned int)( (e[k] - ch->min[k]) / ch->d[k]);
+    iv[k] = (unsigned int)( (e[k] - mh->min[k]) / mh->p[k]);
+    iv[k] -= (unsigned int)( (e[k] - mh->min[k]) / mh->d[k]);
   }    
 }
 
@@ -680,6 +809,13 @@ void apply_rotation(CTYPE R[NDIM][NDIM], CTYPE u2[NDIM], CTYPE u0[NDIM])
   u0[2] = R[2][0] * u2[0] + R[2][1] * u2[1] + R[2][2] * u2[2];
 }
 
+void define_rotated_unit_vector(CTYPE lambda, CTYPE gamma, CTYPE R[NDIM][NDIM], CTYPE u0[NDIM])
+{
+  CTYPE u2 [NDIM];
+  define_unit_vector(lambda, gamma, u2);
+  apply_rotation(R, u2, u0);
+}
+
 CTYPE distance_to_center(CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE ac)
 {
   CTYPE d;
@@ -698,23 +834,23 @@ CTYPE get_dict_ctype(PyObject * dict, char key[8])
   return (CTYPE)PyFloat_AsDouble(obj);
 }
 
-void PyDict_AsMapHeader(PyObject * dict, map_header * ch)
+void PyDict_AsMapHeader(PyObject * dict, map_header * mh)
 {
-  ch->p[0] = get_dict_ctype(dict, "CDELT1");
-  ch->p[1] = get_dict_ctype(dict, "CDELT2");
-  ch->p[2] = get_dict_ctype(dict, "CDELT3");
+  mh->p[0] = get_dict_ctype(dict, "CDELT1");
+  mh->p[1] = get_dict_ctype(dict, "CDELT2");
+  mh->p[2] = get_dict_ctype(dict, "CDELT3");
 
-  ch->min[0] = get_dict_ctype(dict, "MMIN0");
-  ch->min[1] = get_dict_ctype(dict, "MMIN1");
-  ch->min[2] = get_dict_ctype(dict, "MMIN2");
+  mh->min[0] = get_dict_ctype(dict, "MMIN0");
+  mh->min[1] = get_dict_ctype(dict, "MMIN1");
+  mh->min[2] = get_dict_ctype(dict, "MMIN2");
 
-  ch->max[0] = get_dict_ctype(dict, "MMAX0");
-  ch->max[1] = get_dict_ctype(dict, "MMAX1");
-  ch->max[2] = get_dict_ctype(dict, "MMAX2");
+  mh->max[0] = get_dict_ctype(dict, "MMAX0");
+  mh->max[1] = get_dict_ctype(dict, "MMAX1");
+  mh->max[2] = get_dict_ctype(dict, "MMAX2");
 
-  ch->d[0] = get_dict_ctype(dict, "PSHAPE0");
-  ch->d[1] = get_dict_ctype(dict, "PSHAPE1");
-  ch->d[2] = get_dict_ctype(dict, "PSHAPE2");
+  mh->d[0] = get_dict_ctype(dict, "PSHAPE0");
+  mh->d[1] = get_dict_ctype(dict, "PSHAPE1");
+  mh->d[2] = get_dict_ctype(dict, "PSHAPE2");
 }
 
 void PyDict_AsImageHeader(PyObject * dict, image_header * ih)
