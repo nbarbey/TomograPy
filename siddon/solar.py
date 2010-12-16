@@ -47,7 +47,10 @@ def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
         data[..., i] = fits_array
         if i != 0:
             data.header.append(dict(fits_array.header))
+    # ensure coherent data type
     data = data.astype(dtype)
+    for i in xrange(data.shape[-1]):
+        data.header[i]['BITPIX'] = fa.bitpix_inv[dtype.__name__]
     return data
 
 def update_header(array):
