@@ -94,8 +94,10 @@ def stsrt(data, cube, **kwargs):
     # Parse kwargs.
     obj_rmin = kwargs.get('obj_rmin', None)
     obj_rmax = kwargs.get('obj_rmax', None)
+    # mask data
+    data_mask = solar.define_data_mask(data, **kwargs)
     # define temporal groups
-    times = [solar.convert_time(t) for t in data.header['DATE_OBS']]
+    times = [solar.convert_time(h['DATE_OBS']) for h in data.header]
     ## if no interval is given separate every image
     dt_min = kwargs.get('dt_min', np.max(np.diff(times)) + 1)
     #groups = solar.temporal_groups(data, dt_min)
@@ -103,16 +105,16 @@ def stsrt(data, cube, **kwargs):
     n = len(ind)
     # 4d model
     cube_header = cube.header.copy()
-    cube_header.update('NAXIS', 4)
-    cube_header.update('NAXIS4', data.shape[-1])
-    P = siddon4d_lo(data.header, cube_header, obstacle="sun")
+    cube_header['NAXIS'] = 4
+    cube_header['NAXIS4'] = data.shape[-1]
+    P = siddon4d_lo(data.header, cube_header, mask=data_mask, obstacle="sun")
     # define per group summation of maps
     # define new 4D cube
     cube4 = cube.reshape(cube.shape + (1,)).repeat(n, axis=-1)
-    cube4.header.update('NAXIS', 4)
-    cube4.header.update('NAXIS4', cube4.shape[3])
-    cube4.header.update('CRVAL4', 0.)
-    cube4.header.update('CDELT4', dt_min)
+    cube4.header['NAXIS'] = 4
+    cube4.header['NAXIS4'] = cube4.shape[3]
+    cube4.header['CRVAL4'] = 0.
+    cube4.header['CDELT4'] = dt_min
     S = group_sum(ind, cube, data)
     P = P * S.T
     # priors
@@ -126,8 +128,6 @@ def stsrt(data, cube, **kwargs):
         D = [Di * Mo.T for Di in D]
     else:
         obj_mask = None
-    # mask data
-    P, data_mask = _apply_data_mask(P, data, **kwargs)
     return P, D, obj_mask, data_mask
 
 def mask_object(cube, **kwargs):
