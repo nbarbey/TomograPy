@@ -179,7 +179,7 @@ def time_compare(x, y):
     else: # a < b
         return -1
 
-def define_data_mask(data, data_rmin=None, data_rmax=None, 
+def define_data_mask(data, data_rmin=None, data_rmax=None, ring=None,
                      mask_negative=False, mask_nan=True, **kwargs):
     """
     Defines a mask of shape data.shape.
@@ -208,12 +208,14 @@ def define_data_mask(data, data_rmin=None, data_rmax=None,
     """
     data_mask = np.zeros(data.shape, dtype=bool)
     # if no radius limits no need to compute R
-    if data_rmin is not None or data_rmax is not None:
+    if data_rmin is not None or data_rmax is not None or ring is not None:
         R = distance_to_sun_center(data)
         if data_rmin is not None:
             data_mask[(R < data_rmin)] = 1
         if data_rmax is not None:
             data_mask[(R > data_rmax)] = 1
+        if ring is not None:
+            data_mask[(ring[0] < R < ring[1])] = 1
     if mask_negative:
         data_mask[data < 0.] = 1
     if mask_nan:
