@@ -215,7 +215,7 @@ def define_data_mask(data, data_rmin=None, data_rmax=None, ring=None,
         if data_rmax is not None:
             data_mask[(R > data_rmax)] = 1
         if ring is not None:
-            data_mask[(ring[0] < R < ring[1])] = 1
+            data_mask[(ring[0] < R) * (R < ring[1])] = 1
     if mask_negative:
         data_mask[data < 0.] = 1
     if mask_nan:
