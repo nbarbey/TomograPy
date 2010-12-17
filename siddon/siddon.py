@@ -147,7 +147,7 @@ def backprojector(data, cube, mask=None, obstacle=None):
     exec(proj_str % my_siddon_dict)
     return cube
 
-def projector4d(data, cube, obstacle=None):
+def projector4d(data, cube, mask=None, obstacle=None):
     """
     Project a cubic map into a data cube using the Siddon algorithm.
     The data cube is updated in-place, so you should make a copy before
@@ -181,7 +181,7 @@ def projector4d(data, cube, obstacle=None):
     exec(proj_str % my_siddon_dict)
     return data
 
-def backprojector4d(data, cube, obstacle=None):
+def backprojector4d(data, cube, mask=None, obstacle=None):
     """
     Backproject a data cube into a cubic map using the Siddon algorithm.
     The map cube is updated in-place, so you should make a copy before
