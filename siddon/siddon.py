@@ -564,25 +564,42 @@ def intersect_cube(data, obj, u):
     Flag the image pixels that intersect the cube.
     """
     # get metadata
+    a1, an = full_intersection_parameters(data, obj, u)
+    p = full_intersection_steps(obj, u)
+    pabs = full_pabs(p)
+    amin, amax = full_intersect_cube(a1, an)
+    flag = amin < amax
+    return flag, p, a1, amin
+
+def full_intersection_parameters(data, obj, u):
     Mmin = dict_to_array(obj.header, "MMIN")
     Mmax = dict_to_array(obj.header, "MMAX")
-    pshape = dict_to_array(obj.header, "PSHAPE")
-    p = np.empty(u.shape)
     a1 = np.empty(u.shape)
     an = np.empty(u.shape)
     for t in xrange(data.shape[-1]):
         h = data.header[t]
         M = dict_to_array(h, "M")
         for i in xrange(3):
-            p[..., t, i] = pshape[i] / u[..., t, i]
             a1[..., t, i] = (Mmin[i] - M[i]) / u[..., t, i]
             an[..., t, i] = (Mmax[i] - M[i]) / u[..., t, i]
-    pabs = np.abs(p)
+    return a1, an
+
+def full_intersection_steps(obj, u):
+    pshape = dict_to_array(obj.header, "PSHAPE")
+    p = np.empty(u.shape)
+    for t in xrange(data.shape[-1]):
+        for i in xrange(3):
+            p[..., t, i] = pshape[i] / u[..., t, i]
+    return p
+
+def full_pabs(p):
+    return np.abs(p)
+
+def full_intersect_cube(a1, an):
     Imin, Imax = compare(a1, an)
     amin = max3(Imin[..., 0], Imin[..., 1], Imin[..., 2])
     amax = min3(Imax[..., 0], Imax[..., 1], Imax[..., 2])
-    flag = amin < amax
-    return flag, p, a1, amin
+    return amin, amax
 
 def initialize_raytracing(data, obj, u, p, a1, amin):
     # metadata
