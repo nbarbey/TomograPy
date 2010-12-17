@@ -424,9 +424,9 @@ void ray_projector(CTYPE M[NDIM],
   unsigned int next[NDIM];
   unsigned int n[NDIM];
 
-  n[0] = map->dimensions[0];
-  n[1] = map->dimensions[1];
-  n[2] = map->dimensions[2];
+  n[0] = (unsigned int) map->dimensions[0];
+  n[1] = (unsigned int) map->dimensions[1];
+  n[2] = (unsigned int) map->dimensions[2];
 
   get_intersection_parameters(mh, M, u0, a1, an);
   intersect_map(M, u0, a1, an, &amin, &amax);
@@ -441,7 +441,7 @@ void ray_projector(CTYPE M[NDIM],
     get_next_voxel_index(n, update, iv, next);
     get_intersection_distance(next, p, a1, amin, D);
     ac = amin;
-    /* check if still into the map and did not reached the obstacles */
+    /* check if still into the map and did not reach the obstacles */
     while(in_map(n, iv) && %(obstacle)s(M, u0, ac))
     {
       voxel(data, id, map, iv, D, &ac, pabs, update);
@@ -573,11 +573,13 @@ void get_voxel_index(map_header * mh, CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE amin,
 {
   unsigned int k;
   CTYPE e[NDIM];
+  CTYPE ep[NDIM];
   for (k = 0; k < NDIM; k++)
   {
     e[k] = M[k] + amin * u0[k];
-    iv[k] = (unsigned int)( (e[k] - mh->min[k]) / mh->p[k]);
-    iv[k] -= (unsigned int)( (e[k] - mh->min[k]) / mh->d[k]);
+    ep[k] = e[k] - mh->min[k];
+    iv[k] = (unsigned int)(ep[k] / mh->p[k]);
+    iv[k] -= (unsigned int)(ep[k] / mh->d[k]);
   }    
 }
 
@@ -849,17 +851,17 @@ void PyDict_AsMapHeader(PyObject * dict, map_header * mh)
   mh->p[1] = get_dict_ctype(dict, "CDELT2");
   mh->p[2] = get_dict_ctype(dict, "CDELT3");
 
-  mh->min[0] = get_dict_ctype(dict, "MMIN0");
-  mh->min[1] = get_dict_ctype(dict, "MMIN1");
-  mh->min[2] = get_dict_ctype(dict, "MMIN2");
+  mh->min[0] = get_dict_ctype(dict, "MMIN1");
+  mh->min[1] = get_dict_ctype(dict, "MMIN2");
+  mh->min[2] = get_dict_ctype(dict, "MMIN3");
 
-  mh->max[0] = get_dict_ctype(dict, "MMAX0");
-  mh->max[1] = get_dict_ctype(dict, "MMAX1");
-  mh->max[2] = get_dict_ctype(dict, "MMAX2");
+  mh->max[0] = get_dict_ctype(dict, "MMAX1");
+  mh->max[1] = get_dict_ctype(dict, "MMAX2");
+  mh->max[2] = get_dict_ctype(dict, "MMAX3");
 
-  mh->d[0] = get_dict_ctype(dict, "PSHAPE0");
-  mh->d[1] = get_dict_ctype(dict, "PSHAPE1");
-  mh->d[2] = get_dict_ctype(dict, "PSHAPE2");
+  mh->d[0] = get_dict_ctype(dict, "PSHAPE1");
+  mh->d[1] = get_dict_ctype(dict, "PSHAPE2");
+  mh->d[2] = get_dict_ctype(dict, "PSHAPE3");
 }
 
 void PyDict_AsImageHeader(PyObject * dict, image_header * ih)
@@ -870,17 +872,17 @@ void PyDict_AsImageHeader(PyObject * dict, image_header * ih)
   ih->p[0] = get_dict_ctype(dict, "CDELT1");
   ih->p[1] = get_dict_ctype(dict, "CDELT2");
  
-  ih->R[0][0] = get_dict_ctype(dict, "R0_0");
-  ih->R[0][1] = get_dict_ctype(dict, "R0_1");
-  ih->R[0][2] = get_dict_ctype(dict, "R0_2");
-  ih->R[1][0] = get_dict_ctype(dict, "R1_0");
-  ih->R[1][1] = get_dict_ctype(dict, "R1_1");
-  ih->R[1][2] = get_dict_ctype(dict, "R1_2");
-  ih->R[2][0] = get_dict_ctype(dict, "R2_0");
-  ih->R[2][1] = get_dict_ctype(dict, "R2_1");
-  ih->R[2][2] = get_dict_ctype(dict, "R2_2");
+  ih->R[0][0] = get_dict_ctype(dict, "R1_1");
+  ih->R[0][1] = get_dict_ctype(dict, "R1_2");
+  ih->R[0][2] = get_dict_ctype(dict, "R1_3");
+  ih->R[1][0] = get_dict_ctype(dict, "R2_1");
+  ih->R[1][1] = get_dict_ctype(dict, "R2_2");
+  ih->R[1][2] = get_dict_ctype(dict, "R2_3");
+  ih->R[2][0] = get_dict_ctype(dict, "R3_1");
+  ih->R[2][1] = get_dict_ctype(dict, "R3_2");
+  ih->R[2][2] = get_dict_ctype(dict, "R3_3");
 
-  ih->M[0] = get_dict_ctype(dict, "M0");
-  ih->M[1] = get_dict_ctype(dict, "M1");
-  ih->M[2] = get_dict_ctype(dict, "M2");
+  ih->M[0] = get_dict_ctype(dict, "M1");
+  ih->M[1] = get_dict_ctype(dict, "M2");
+  ih->M[2] = get_dict_ctype(dict, "M3");
 }

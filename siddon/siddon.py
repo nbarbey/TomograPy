@@ -213,6 +213,30 @@ def backprojector4d(data, cube, obstacle=None):
     exec(proj_str % my_siddon_dict)
     return cube
 
+def image_projector(data, cube, t, mask=None, obstacle=None):
+    if mask is None:
+        mask = np.zeros(data.shape)
+    check_projector_inputs(data, cube)
+    my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
+                      "obstacle":obstacles_inv[obstacle],
+                      "pj":"pj"
+                      }
+    proj_str = "image_projector" + suffix_str + "(data, cube, mask, t)"
+    exec(proj_str % my_siddon_dict)
+    return data
+
+def image_backprojector(data, cube, t, mask=None, obstacle=None):
+    if mask is None:
+        mask = np.zeros(data.shape)
+    check_projector_inputs(data, cube)
+    my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
+                      "obstacle":obstacles_inv[obstacle],
+                      "pj":"bpj"
+                      }
+    proj_str = "image_projector" + suffix_str + "(data, cube, mask, t)"
+    exec(proj_str % my_siddon_dict)
+    return data    
+
 def check_projector_inputs(data, cube):
     """
     Check that inputs to projectors functions are correct.
@@ -556,7 +580,7 @@ def initialize_raytracing(data, obj, u, p, a1, amin):
     e = np.empty(u.shape)
     for t in xrange(data.shape[-1]):
         h = data.header[t]
-        M = dict_to_array_data(h, "M")
+        M = dict_to_array(h, "M")
         for k in xrange(3):
             e[..., t, k] = M[k]  + amin[..., t] * u[..., t, k]
     # value to add at each voxel update
@@ -631,17 +655,17 @@ def define_unit_vector(l, g):
 
 # dict to array and array to dict functions
 
-def array_to_dict(indict, name, arr):
+def array_to_dict(indict, name, arr, imin=1):
     """
     Set keywords defining an array as arri_j.
     """
     if arr.ndim == 1:
         for i in xrange(arr.shape[0]):
-            indict[name + str(i)] = arr[i]
+            indict[name + str(i + imin)] = arr[i]
     elif arr.ndim == 2:
         for i in xrange(arr.shape[0]):
             for j in xrange(arr.shape[1]):
-                indict[name + "%i_%i" % (i, j)] = arr[i, j]
+                indict[name + "%i_%i" % (i + imin, j + imin)] = arr[i, j]
     else:
         raise ValueError("Not implemented for arr.ndim > 2")
 

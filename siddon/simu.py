@@ -10,7 +10,7 @@ default_image_dict = {'NAXIS':2, 'NAXIS1':1, 'NAXIS2':1,
                       'BITPIX':-64, 'SIMPLE':True,
                       'CRPIX1':0.5, 'CRPIX2':0.5, 'CDELT1':1., 'CDELT2':1.,
                       'LON':0., 'LAT':0., 'ROL':0.,
-                      'D':1., 'M0':1., 'M1':0., 'M2':0.}
+                      'D':1., 'M1':1., 'M2':0., 'M3':0.}
 image_keys = default_image_dict.keys()
 default_image = fa.fitsarray_from_header(default_image_dict)
 
@@ -43,21 +43,21 @@ class Image(fa.InfoArray):
         self.header[key] = value
         if key == 'LAT' or key == 'LON' or key == 'D':
             self._update_from_spherical(key, value)
-        elif key == 'M0' or key == 'M1' or key == 'M2':
+        elif key == 'M1' or key == 'M2' or key == 'M3':
             self._update_from_cartesian(key, value)
 
     def _update_from_spherical(self, key, value):
         lon = self.header['LON']
         lat = self.header['LAT']
         d = self.header['D']
-        self.header['M0'] = d * np.cos(lat) * np.cos(lon)
-        self.header['M1'] = d * np.cos(lat) * np.sin(lon)
-        self.header['M2'] = d * np.sin(lat)
+        self.header['M1'] = d * np.cos(lat) * np.cos(lon)
+        self.header['M2'] = d * np.cos(lat) * np.sin(lon)
+        self.header['M3'] = d * np.sin(lat)
 
     def _update_from_cartesian(self, key, value):
-        xd = self.header('M0')
-        yd = self.header('M1')
-        zd = self.header('M2')
+        xd = self.header('M1')
+        yd = self.header('M2')
+        zd = self.header('M3')
         self.header['LON'] = np.arctan2(yd, xd)
         self.header['LAT'] = np.arctan2(np.sqrt(xd ** 2 + yd ** 2), zd)
         self.header['D'] = np.sqrt(xd ** 2 + yd ** 2 + zd ** 2)

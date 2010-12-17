@@ -8,8 +8,7 @@ c_siddon_template = "siddon" + os.sep + "C_siddon.c.template"
 templates = (c_siddon_template,)# c_siddon4d_template)
 
 # values to replace in templates
-ctypes = {"float":"float32", "double":"float64",
-          "int":"int16", "long":"int32"}
+ctypes = {"float":"float32", "double":"float64",}
 
 obstacles = {"none":None, "sun":"sun"}
 pjs = {"pj":"pj", "bpj":"bpj", "pjt":"pjt", "bpjt":"bpjt"}

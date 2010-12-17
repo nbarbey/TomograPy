@@ -92,9 +92,9 @@ def update_header(array):
     array.header.update('lat', lat)
     array.header.update('rol', rol)
     array.header.update('d', d)
-    array.header.update('M0', xd)
-    array.header.update('M1', yd)
-    array.header.update('M2', zd)
+    array.header.update('M1', xd)
+    array.header.update('M2', yd)
+    array.header.update('M3', zd)
     # convert to radians
     array.header['CDELT1'] *= arcsecond_to_radian
     array.header['CDELT2'] *= arcsecond_to_radian

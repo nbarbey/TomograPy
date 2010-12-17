@@ -38,6 +38,23 @@ def test_projector():
             yield check_projector, im_h, obj_h
 
 
+# check per image projection vs full projection
+# (for exemple openmp issues could be catched here
+def check_full_versus_image(im_h, obj_h):
+    obj = siddon.simu.object_from_header(obj_h)
+    data = siddon.simu.circular_trajectory_data(**im_h)
+    data2 = siddon.simu.circular_trajectory_data(**im_h)
+    if data.dtype == obj.dtype:
+        siddon.projector(data, obj)
+        for t in xrange(data2.shape[-1]):
+            siddon.image_projector(data2, obj, t)
+        assert_array_almost_equal(data, data2)
+
+def test_full_versus_image():
+    for im_h in image_headers:
+        for obj_h in object_headers:
+            yield check_full_versus_image, im_h, obj_h
+
 # check full unit vector
 def check_full_unit_vector(im_h):
     data = siddon.simu.circular_trajectory_data(**im_h)
