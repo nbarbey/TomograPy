@@ -71,6 +71,10 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args);
 
 static PyObject *call_full_unit_vector%(suffix)s(PyObject *self, PyObject *args);
 static PyObject *call_image_unit_vector%(suffix)s(PyObject *self, PyObject *args);
+
+static PyObject * call_full_intersection_parameters%(suffix)s(PyObject * self, PyObject *args);
+static PyObject * call_image_intersection_parameters%(suffix)s(PyObject * self, PyObject *args);
+
 /* image projection */
 inline void image_projector(PyArrayObject * , PyArrayObject * , PyArrayObject * , unsigned int , image_header *, map_header *);
 /* Compute integration along one line of sight. */
@@ -137,8 +141,12 @@ inline void PyDict_AsMapHeader(PyObject * , map_header *);
 inline void PyDict_AsImageHeader(PyObject * , image_header *);
 
 /*to get los direction vector */
-inline static PyObject * full_unit_vector(PyArrayObject * data, PyArrayObject * uarray);
-inline void image_unit_vector(PyArrayObject * data, PyArrayObject * uarray, unsigned int t, image_header * ih);
+inline static PyObject * full_unit_vector(PyArrayObject * , PyArrayObject * );
+inline void image_unit_vector(PyArrayObject * , PyArrayObject * , unsigned int , image_header * );
+
+/* intersection parameters */
+inline PyObject * full_intersection_parameters(PyArrayObject * data, PyArrayObject * map, PyArrayObject * uarray, PyArrayObject * a1array, PyArrayObject * anarray);
+inline void image_intersection_parameters(PyArrayObject * , unsigned int [2], unsigned int , map_header * , image_header * , PyArrayObject * , PyArrayObject * );
 
 
 /*============================================================================*/
@@ -152,6 +160,8 @@ static PyMethodDef _C_siddon%(suffix)sMethods[] = {
   {"ray_projector", call_ray_projector%(suffix)s, METH_VARARGS},
   {"full_unit_vector", call_full_unit_vector%(suffix)s, METH_VARARGS},
   {"image_unit_vector", call_image_unit_vector%(suffix)s, METH_VARARGS},
+  {"full_intersection_parameters", call_full_intersection_parameters%(suffix)s, METH_VARARGS},
+  {"image_intersection_parameters", call_image_intersection_parameters%(suffix)s, METH_VARARGS},
   {NULL, NULL}     /* Sentinel - marks the end of this structure */
 };
 
@@ -325,6 +335,88 @@ static PyObject *call_image_unit_vector%(suffix)s(PyObject *self, PyObject *args
   image_unit_vector(data, uarray, t, &ih);
   Py_RETURN_NONE;
 }
+
+
+static PyObject * call_full_intersection_parameters%(suffix)s(PyObject * self, PyObject *args)
+{
+  /* Input and output matrices to be extracted from args */
+  PyArrayObject *data, *map, *uarray, *a1array, *anarray;
+  PyObject * headers, * py_image_header, *py_map_header;
+  unsigned int t;
+  image_header ih;
+  map_header mh;
+  unsigned int data_shape[2];
+  unsigned int k;
+  /* Parse tuples separately since args will differ between C fcns */
+  if (!PyArg_ParseTuple(args, "O!O!O!O!O!", &PyArray_Type, &data, &PyArray_Type, &map,
+			&PyArray_Type, &uarray, &PyArray_Type, &a1array, 
+			&PyArray_Type, &anarray, &PyArray_Type))
+    return NULL;
+  /*Raise errors if input matrix is missing*/
+  if (NULL == data)
+    return NULL;
+  if (NULL == map)
+    return NULL;
+  if (NULL == uarray)
+    return NULL;
+  if (NULL == a1array)
+    return NULL;
+  if (NULL == anarray)
+    return NULL;
+
+  /* Siddon for each time index */
+  full_intersection_parameters(data, map, uarray, a1array, anarray);
+  Py_RETURN_NONE;
+}
+
+
+static PyObject * call_image_intersection_parameters%(suffix)s(PyObject * self, PyObject *args)
+{
+  /* Input and output matrices to be extracted from args */
+  PyArrayObject *data, *map, *uarray, *a1array, *anarray;
+  PyObject * headers, * py_image_header, *py_map_header;
+  unsigned int t=0;
+  image_header ih;
+  map_header mh;
+  unsigned int data_shape[2];
+  unsigned int k;
+  /* Parse tuples separately since args will differ between C fcns */
+  if (!PyArg_ParseTuple(args, "O!O!O!O!O!i", &PyArray_Type, &data, &PyArray_Type, &map,
+			&PyArray_Type, &uarray, &PyArray_Type, &a1array, &PyArray_Type, &anarray, &t))
+    return NULL;
+  /*Raise errors if input matrix is missing*/
+  if (NULL == data)
+    return NULL;
+  if (NULL == map)
+    return NULL;
+  if (NULL == uarray)
+    return NULL;
+  if (NULL == a1array)
+    return NULL;
+  if (NULL == anarray)
+    return NULL;
+
+  /* Get data header */
+  headers = NULL;
+  headers = PyObject_GetAttrString((PyObject*)data, "header");
+  if (NULL == headers)
+    return NULL;
+
+  py_image_header = PyList_GetItem(headers, t);
+  PyDict_AsImageHeader(py_image_header, &ih);
+
+  for (k=0; k < 2; k++)
+    data_shape[k] = data->dimensions[k];
+
+  /* get map header */
+  py_map_header = (PyObject*) PyObject_GetAttrString((PyObject*)map, "header");
+  PyDict_AsMapHeader(py_map_header, &mh);
+
+  /* Siddon for each time index */
+  image_intersection_parameters(uarray, data_shape, t, &mh, &ih, a1array, anarray);
+  Py_RETURN_NONE;
+}
+
 
 /* C functions */
 
@@ -515,6 +607,78 @@ void image_unit_vector(PyArrayObject * data, PyArrayObject * uarray, unsigned in
     }
   }
 }
+
+PyObject * full_intersection_parameters(PyArrayObject * data, PyArrayObject * map, PyArrayObject * uarray, PyArrayObject * a1array, PyArrayObject * anarray)
+{
+  /* declarations */
+  PyObject * py_map_header, *headers, *py_image_header;
+  /* c map header*/
+  map_header mh;
+  image_header * ih_array;
+  unsigned int k;
+  unsigned int data_shape[2];
+  /* loop incremented integers*/
+  int t;
+  /* Get data header */
+  headers = NULL;
+  headers = PyObject_GetAttrString((PyObject*)data, "header");
+  if (NULL == headers)
+    return NULL;
+
+  /* allocate memory for array of image_headers*/
+  ih_array = (image_header*) malloc(data->dimensions[2] * sizeof(image_header));
+  for( t = 0 ; t < data->dimensions[2] ; t++)
+  {
+    py_image_header = PyList_GetItem(headers, t);
+    PyDict_AsImageHeader(py_image_header, &ih_array[t]);
+  }
+
+  /* get map header */
+  py_map_header = (PyObject*) PyObject_GetAttrString((PyObject*)map, "header");
+  PyDict_AsMapHeader(py_map_header, &mh);
+
+  /* Loop on the time / image dimension */
+  Py_BEGIN_ALLOW_THREADS
+  #pragma omp parallel default (shared) private(t)
+  #pragma omp for
+  for(t = 0 ; t < data->dimensions[2] ; t++){
+    for (k=0; k < 2; k++)
+      data_shape[k] = data->dimensions[k];
+    image_intersection_parameters(uarray, data_shape, t, &mh, &ih_array[t], a1array, anarray);
+  }
+  Py_END_ALLOW_THREADS
+  free(ih_array);
+  Py_RETURN_NONE;
+}
+
+inline void image_intersection_parameters(PyArrayObject * uarray, unsigned int data_shape[2], unsigned int t, map_header * mh, image_header * ih, PyArrayObject * a1array, PyArrayObject * anarray)
+{
+  unsigned int id[NDIM];
+  /* normalized direction vector in image referentiel */
+  /* in solar referentiel */
+  CTYPE u0[NDIM];
+  CTYPE a1[NDIM], an[NDIM];
+
+  unsigned int k;
+
+  id[2] = t;
+
+  /* loops on angles (detectors pixels) */
+  for(id[0] = 0 ; id[0] < data_shape[0] ; id[0]++)
+  {
+    for(id[1] = 0 ; id[1] < data_shape[1] ; id[1]++)
+    {
+      for (k=0; k < NDIM ; k++)
+	u0[k] = IND3t(uarray, id, k);
+      get_intersection_parameters(mh, ih->M, u0, a1, an);
+      for (k=0; k < NDIM ; k++)
+	IND3t(a1array, id, k) = a1[k];
+      for (k=0; k < NDIM ; k++)
+	IND3t(anarray, id, k) = an[k];
+    }
+  }
+}
+
 
 void get_intersection_parameters(map_header * mh, CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE a1[NDIM], CTYPE an[NDIM])
 {
