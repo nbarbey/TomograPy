@@ -135,7 +135,7 @@ def mask_object(cube, **kwargs):
     obj_rmax = kwargs.get('obj_rmax', None)
     if obj_rmin is not None or obj_rmax is not None:
         obj_mask = solar.define_map_mask(cube, **kwargs)
-        Mo = lo.mask(obj_mask)
+        Mo = lo.mask(obj_mask, dtype=cube.dtype)
     return Mo, obj_mask
 
 def group_sum(ind, cube, data):
