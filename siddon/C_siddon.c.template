@@ -14,7 +14,7 @@
 #include <omp.h>
 
 /* To avoid division by zero. */
-#define INF 1000000 /* in solar radii*/
+#define INF 100000/* in solar radii*/
 /* Dimension number of the problem. */
 #define NDIM 3 /*number of dimensions*/
 /* To allow for multiple data types through templating. */
