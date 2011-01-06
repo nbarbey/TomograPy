@@ -78,6 +78,9 @@ for method in c_methods:
         exec(exec_str % siddon_dict)
         del exec_str
 
+# const
+INF = 100000
+
 # projector
 def projector(data, cube, mask=None, obstacle=None):
     """
@@ -576,12 +579,15 @@ def full_intersection_parameters(data, obj, u):
     Mmax = dict_to_array(obj.header, "MMAX")
     a1 = np.empty(u.shape)
     an = np.empty(u.shape)
+    np.seterr(divide="ignore")
     for t in xrange(data.shape[-1]):
         h = data.header[t]
         M = dict_to_array(h, "M")
         for i in xrange(3):
             a1[..., t, i] = (Mmin[i] - M[i]) / u[..., t, i]
             an[..., t, i] = (Mmax[i] - M[i]) / u[..., t, i]
+    a1[np.isinf(a1)] = -INF
+    an[np.isinf(an)] = INF
     return a1, an
 
 def full_intersection_steps(obj, u):
