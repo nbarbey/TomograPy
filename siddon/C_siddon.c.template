@@ -477,13 +477,13 @@ void conic_image_projector(PyArrayObject * data, PyArrayObject *  map, PyArrayOb
   /* loops on angles (detectors pixels) */
   for(id[0] = 0 ; id[0] < n1 ; id[0]++)
   {
-    gamma = (id[0] - ih->s[0]) * ih->p[0];
+    gamma = (id[0] - ih->s[0] + 1) * ih->p[0];
     for(id[1] = 0 ; id[1] < n2 ; id[1]++)
     {
       /* skip computation if the mask is equal to 1 at current detector index */
       if((IND3(mask, id)) == 0)
       {
-	lambda = (id[1] - ih->s[1]) * ih->p[1];
+	lambda = (id[1] - ih->s[1] + 1) * ih->p[1];
 	define_rotated_unit_vector(lambda, gamma, ih->R, u0);
 	ray_projector(ih->M, u0, data, id, map, mh);
       }

@@ -26,7 +26,8 @@ The mandatory keywords are as follows:
      -64    np.float64
 
   * CRPIX{1,2,[3]} : position of the reference pixel in pixels (can a be
-    float).
+    float). Pixels coordinates are such that the center of the first pixel
+    is (1, 1).
 
   * CRVAL{1,2,[3]} : position of the reference pixel in physical
     coordinates.
