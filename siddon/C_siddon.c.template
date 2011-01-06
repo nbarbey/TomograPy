@@ -341,28 +341,30 @@ static PyObject * call_full_intersection_parameters%(suffix)s(PyObject * self, P
 {
   /* Input and output matrices to be extracted from args */
   PyArrayObject *data, *map, *uarray, *a1array, *anarray;
-  PyObject * headers, * py_image_header, *py_map_header;
-  unsigned int t;
-  image_header ih;
-  map_header mh;
-  unsigned int data_shape[2];
-  unsigned int k;
   /* Parse tuples separately since args will differ between C fcns */
   if (!PyArg_ParseTuple(args, "O!O!O!O!O!", &PyArray_Type, &data, &PyArray_Type, &map,
 			&PyArray_Type, &uarray, &PyArray_Type, &a1array, 
 			&PyArray_Type, &anarray, &PyArray_Type))
+  {
+    PyErr_SetString(PyExc_ValueError, "Wrong input.");
     return NULL;
+  }
   /*Raise errors if input matrix is missing*/
-  if (NULL == data)
-    return NULL;
-  if (NULL == map)
-    return NULL;
-  if (NULL == uarray)
-    return NULL;
-  if (NULL == a1array)
-    return NULL;
-  if (NULL == anarray)
-    return NULL;
+  if (NULL == data){
+    PyErr_SetString(PyExc_ValueError, "No data array input.");
+    return NULL;}
+  if (NULL == map){
+    PyErr_SetString(PyExc_ValueError, "No map array input.");
+    return NULL;}
+  if (NULL == uarray){
+    PyErr_SetString(PyExc_ValueError, "No u array input.");
+    return NULL;}
+  if (NULL == a1array){
+    PyErr_SetString(PyExc_ValueError, "No a1 array input.");
+    return NULL;}
+  if (NULL == anarray){
+    PyErr_SetString(PyExc_ValueError, "No an array input.");
+    return NULL;}
 
   /* Siddon for each time index */
   full_intersection_parameters(data, map, uarray, a1array, anarray);
