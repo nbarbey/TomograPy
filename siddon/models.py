@@ -103,26 +103,19 @@ def stsrt(data, cube, **kwargs):
     #groups = solar.temporal_groups(data, dt_min)
     ind = solar.temporal_groups_indexes(data, dt_min)
     n = len(ind)
-    # 4d model
-    cube_header = cube.header.copy()
-    cube_header['NAXIS'] = 4
-    cube_header['NAXIS4'] = data.shape[-1]
-    P = siddon4d_lo(data.header, cube_header, mask=data_mask, obstacle="sun")
-    # define per group summation of maps
     # define new 4D cube
-    cube4 = cube.reshape(cube.shape + (1,)).repeat(n, axis=-1)
-    cube4.header['NAXIS'] = 4
+    cube4 = cube[..., np.newaxis].repeat(n, axis=-1)
     cube4.header['NAXIS4'] = cube4.shape[3]
-    cube4.header['CRVAL4'] = 0.
-    cube4.header['CDELT4'] = dt_min
-    S = group_sum(ind, cube, data)
-    P = P * S.T
+    # define 4d model
+    # XXX assumes all groups have same number of elements
+    ng = data.shape[-1] / n
+    P = siddon4d_lo(data.header, cube4.header, ng=ng, mask=data_mask, obstacle="sun")
     # priors
     D = [lo.diff(cube4.shape, axis=i) for i in xrange(cube4.ndim)]
     # mask object
     if obj_rmin is not None or obj_rmax is not None:
         Mo, obj_mask = mask_object(cube, **kwargs)
-        obj_mask = obj_mask.reshape(obj_mask.shape + (1,)).repeat(n, axis=-1)
+        obj_mask = obj_mask[..., np.newaxis].repeat(n, axis=-1)
         Mo = lo.mask(obj_mask)
         P = P * Mo.T
         D = [Di * Mo.T for Di in D]

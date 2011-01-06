@@ -1,6 +1,7 @@
 """
 If lo package is present, define siddon lo wrapper
 """
+import numpy as np
 import lo
 import fitsarray as fa
 from siddon import dataarray_from_header, backprojector, projector
@@ -29,7 +30,7 @@ def siddon_lo(data_header, cube_header, **kwargs):
         return y
     return lo.ndsubclass(xin=cube, xout=data, matvec=matvec, rmatvec=rmatvec, dtype=data.dtype)
 
-def siddon4d_lo(data_header, cube_header, **kwargs):
+def siddon4d_lo(data_header, cube_header, ng=1, **kwargs):
     """
     A linear operator performing projection and backprojection using
     Siddon 4-dimensional variation.
@@ -37,15 +38,24 @@ def siddon4d_lo(data_header, cube_header, **kwargs):
     data = dataarray_from_header(data_header)
     data[:] = 0
     cube = fa.fitsarray_from_header(cube_header)
+    cube.header = dict(cube.header)
     cube[:] = 0
     def matvec(x):
         y = dataarray_from_header(data_header)
         y[:] = 0
-        projector4d(y, x, **kwargs)
+        for i in xrange(ng):
+            yi = y[..., i::ng]
+            yi.header = y.header[i::ng]
+            projector4d(yi, x, **kwargs)
+        del yi
         return y
     def rmatvec(x):
         y = fa.fitsarray_from_header(cube_header)
         y[:] = 0
-        backprojector4d(x, y, **kwargs)
+        for i in xrange(ng):
+            xi = x[..., i::ng]
+            xi.header = xi.header[i::ng]
+            backprojector4d(xi, y, **kwargs)
+        del xi
         return y
     return lo.ndsubclass(xin=cube, xout=data, matvec=matvec, rmatvec=rmatvec, dtype=data.dtype)
