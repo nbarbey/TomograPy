@@ -65,8 +65,8 @@ typedef struct
 /* Functions declarations */
 /* Python wrapper */
 void init_C_siddon%(suffix)s(void);
-static PyObject *call_full_projector%(suffix)s(PyObject *self, PyObject *args);
-static PyObject *call_image_projector%(suffix)s(PyObject *self, PyObject *args);
+static PyObject *call_conic_full_projector%(suffix)s(PyObject *self, PyObject *args);
+static PyObject *call_conic_image_projector%(suffix)s(PyObject *self, PyObject *args);
 static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args);
 
 static PyObject *call_full_unit_vector%(suffix)s(PyObject *self, PyObject *args);
@@ -76,7 +76,7 @@ static PyObject * call_full_intersection_parameters%(suffix)s(PyObject * self, P
 static PyObject * call_image_intersection_parameters%(suffix)s(PyObject * self, PyObject *args);
 
 /* image projection */
-inline void image_projector(PyArrayObject * , PyArrayObject * , PyArrayObject * , unsigned int , image_header *, map_header *);
+inline void conic_image_projector(PyArrayObject * , PyArrayObject * , PyArrayObject * , unsigned int , image_header *, map_header *);
 /* Compute integration along one line of sight. */
 inline void ray_projector(CTYPE[NDIM], CTYPE[NDIM], PyArrayObject*, unsigned int[NDIM], PyArrayObject*, map_header *);
 /* get the steps between each kind of intersection. */
@@ -134,7 +134,7 @@ inline void define_rotated_unit_vector(CTYPE, CTYPE, CTYPE[NDIM][NDIM], CTYPE[ND
 /* Comupte the distance from the map cube reference pixel (center). */
 inline CTYPE distance_to_center(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
 /* Perform projection / backprojection of an image set. */
-inline static PyObject * full_projector(PyArrayObject*, PyArrayObject*, PyArrayObject *);
+inline static PyObject * conic_full_projector(PyArrayObject*, PyArrayObject*, PyArrayObject *);
 /* to get a dict value and recast it into CTYPE*/
 inline CTYPE get_dict_ctype(PyObject * , char [8]);
 inline void PyDict_AsMapHeader(PyObject * , map_header *);
@@ -155,8 +155,8 @@ inline void image_intersection_parameters(PyArrayObject * , unsigned int [2], un
 /* Python methods declaration */
 
 static PyMethodDef _C_siddon%(suffix)sMethods[] = {
-  {"full_projector", call_full_projector%(suffix)s, METH_VARARGS},
-  {"image_projector", call_image_projector%(suffix)s, METH_VARARGS},
+  {"conic_full_projector", call_conic_full_projector%(suffix)s, METH_VARARGS},
+  {"conic_image_projector", call_conic_image_projector%(suffix)s, METH_VARARGS},
   {"ray_projector", call_ray_projector%(suffix)s, METH_VARARGS},
   {"full_unit_vector", call_full_unit_vector%(suffix)s, METH_VARARGS},
   {"image_unit_vector", call_image_unit_vector%(suffix)s, METH_VARARGS},
@@ -173,7 +173,7 @@ void init_C_siddon%(suffix)s()  {
 
 /* Wrappers code */
 
-static PyObject *call_full_projector%(suffix)s(PyObject *self, PyObject *args)
+static PyObject *call_conic_full_projector%(suffix)s(PyObject *self, PyObject *args)
 {
   /* Input and output matrices to be extracted from args */
   PyArrayObject *data, *map, *mask;
@@ -191,10 +191,10 @@ static PyObject *call_full_projector%(suffix)s(PyObject *self, PyObject *args)
     return NULL;
 
   /* Siddon for each time index */
-  return full_projector(data, map, mask);
+  return conic_full_projector(data, map, mask);
 }
 
-static PyObject *call_image_projector%(suffix)s(PyObject *self, PyObject *args)
+static PyObject *call_conic_image_projector%(suffix)s(PyObject *self, PyObject *args)
 {
   /* Input and output matrices to be extracted from args */
   PyArrayObject *data, *map, *mask;
@@ -228,7 +228,7 @@ static PyObject *call_image_projector%(suffix)s(PyObject *self, PyObject *args)
   PyDict_AsMapHeader(py_map_header, &mh);
 
   /* Siddon for each time index */
-  image_projector(data, map, mask, t, &ih, &mh);
+  conic_image_projector(data, map, mask, t, &ih, &mh);
   Py_RETURN_NONE;
 }
 
@@ -420,7 +420,7 @@ static PyObject * call_image_intersection_parameters%(suffix)s(PyObject * self, 
 
 /* C functions */
 
-static PyObject * full_projector(PyArrayObject * data, PyArrayObject * map, PyArrayObject * mask)
+static PyObject * conic_full_projector(PyArrayObject * data, PyArrayObject * map, PyArrayObject * mask)
 {
   /* declarations */
   PyObject * py_map_header, *headers, *py_image_header;
@@ -452,14 +452,14 @@ static PyObject * full_projector(PyArrayObject * data, PyArrayObject * map, PyAr
   #pragma omp parallel default (shared) private(t)
   #pragma omp for
   for(t = 0 ; t < data->dimensions[2] ; t++){
-    image_projector(data, map, mask, t, &ih_array[t], &mh);
+    conic_image_projector(data, map, mask, t, &ih_array[t], &mh);
   }
   Py_END_ALLOW_THREADS
   free(ih_array);
   Py_RETURN_NONE;
 }
 
-void image_projector(PyArrayObject * data, PyArrayObject *  map, PyArrayObject * mask, unsigned int t, image_header * ih, map_header * mh)
+void conic_image_projector(PyArrayObject * data, PyArrayObject *  map, PyArrayObject * mask, unsigned int t, image_header * ih, map_header * mh)
 {
   unsigned int id[NDIM];
   CTYPE lambda, gamma;
