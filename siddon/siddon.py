@@ -274,6 +274,9 @@ def C_full_unit_vector(data):
     return u
 
 def C_full_intersection_parameters(data, cube, u):
+    if not isinstance(cube.header, dict):
+        cube.header = dict(cube.header)
+
     a1 = np.zeros(data.shape + (3,))
     an = np.zeros(data.shape + (3,))
     my_siddon_dict = {"ctype":ctypes_inv[data.dtype.name],
@@ -419,14 +422,14 @@ def centered_stack(pshape, shape, n_images=1., radius=1.,
     Generate a stack with centered image and circular trajectory data.
     """
     from simu import circular_trajectory_data
-    header = centered_image_header(pshape, shape, dtype=np.float64)
+    header = centered_image_header(pshape, shape, dtype=dtype)
     header.update({'n_images':n_images})
     header.update({'radius':radius})
     header.update({'min_lon':min_lon})
     header.update({'max_lon':max_lon})
     data = circular_trajectory_data(**header)
     data[:] = fill
-    return data
+    return data.astype(dtype)
 
 def fov(obj, radius):
     """
