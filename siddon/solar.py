@@ -310,7 +310,6 @@ def concatenate(data_list):
 
 def get_times(data):
     return [convert_time(h['DATE_OBS']) for h in data.header]
-    
 
 def sort_data_array(data):
     times = get_times(data)
@@ -328,6 +327,13 @@ def temporal_groups_indexes(data, dt_min):
     times = get_times(data)
     ind1 = list(np.where(np.diff(times) < dt_min)[0])
     return ind1
+
+def temporal_groups_index_list(*kargs):
+    t = temporal_groups_indexes(*kargs)
+    return [range(ti, ti2) for ti, ti2 in zip(t[:-1], t[1:])]
+
+def temporal_groups_index_array(*kargs):
+    return np.asarray(temporal_groups_index_list(*kargs))
 
 def temporal_groups(data, dt_min):
     """
