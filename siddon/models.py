@@ -4,6 +4,7 @@ Defines various tomography models and priors to be used with an optimizer.
 - srt : Solar Rotational Tomography (with priors)
 """
 import numpy as np
+import copy
 import lo
 import siddon
 from lo_wrapper import siddon_lo, siddon4d_lo
@@ -105,6 +106,8 @@ def stsrt(data, cube, **kwargs):
     n = len(ind)
     # define new 4D cube
     cube4 = cube[..., np.newaxis].repeat(n, axis=-1)
+    cube4.header = copy.copy(cube.header)
+    cube4.header['NAXIS'] = 4
     cube4.header['NAXIS4'] = cube4.shape[3]
     # define 4d model
     # XXX assumes all groups have same number of elements
