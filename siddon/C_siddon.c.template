@@ -39,6 +39,8 @@
 			      + i[2] * a->strides[2]		\
 			      + i[3] * a->strides[3])
 
+# define PrintError(msg) (PyErr_SetString(PyExc_ValueError, (msg)))
+
 /*numpy 2.0 way :*/
 /*
   #define IND3t(a, i, j) *((CTYPE *) PyArray_GETPTR4(a, i[0], i[1], i[2], j))
@@ -180,15 +182,19 @@ static PyObject *call_conic_full_projector%(suffix)s(PyObject *self, PyObject *a
 
   /* Parse tuples separately since args will differ between C fcns */
   if (!PyArg_ParseTuple(args, "O!O!O!", &PyArray_Type, &data,
-			&PyArray_Type, &map, &PyArray_Type, &mask))
-    return NULL;
+			&PyArray_Type, &map, &PyArray_Type, &mask)){
+    PrintError("Wrong number of input arguments");
+      return NULL;}
   /*Raise errors if input matrix is missing*/
-  if (NULL == data)
-    return NULL;
-  if (NULL == map)
-    return NULL;
-  if (NULL == mask)
-    return NULL;
+  if (NULL == data){
+    PrintError("No data array input.");
+    return NULL;}
+  if (NULL == map){
+    PrintError("No map array input.");
+    return NULL;}
+  if (NULL == mask){
+    PrintError("No mask array input.");
+    return NULL;}
 
   /* Siddon for each time index */
   return conic_full_projector(data, map, mask);
@@ -204,21 +210,26 @@ static PyObject *call_conic_image_projector%(suffix)s(PyObject *self, PyObject *
   image_header ih;
   /* Parse tuples separately since args will differ between C fcns */
   if (!PyArg_ParseTuple(args, "O!O!O!i", &PyArray_Type, &data,
-			&PyArray_Type, &map, &PyArray_Type, &mask, &t))
-    return NULL;
+			&PyArray_Type, &map, &PyArray_Type, &mask, &t)){
+    PrintError("Wrong number of input arguments");
+      return NULL;}
   /*Raise errors if input matrix is missing*/
-  if (NULL == data)
-    return NULL;
-  if (NULL == map)
-    return NULL;
-  if (NULL == mask)
-    return NULL;
+  if (NULL == data){
+    PrintError("No data array input.");
+    return NULL;}
+  if (NULL == map){
+    PrintError("No map array input.");
+    return NULL;}
+  if (NULL == mask){
+    PrintError("No mask array input.");
+    return NULL;}
 
   /* Get data header */
   headers = NULL;
   headers = PyObject_GetAttrString((PyObject*)data, "header");
-  if (NULL == headers)
-    return NULL;
+  if (NULL == headers){
+    PrintError("data array does not have an header attribute.");
+    return NULL;}
 
   py_image_header = PyList_GetItem(headers, t);
   PyDict_AsImageHeader(py_image_header, &ih);
@@ -245,17 +256,22 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args)
   CTYPE u0[NDIM];
   /* Parse tuples separately since args will differ between C fcns */
   if (!PyArg_ParseTuple(args, "O!O!O!O!", &PyArray_Type, &data,
-			&PyArray_Type, &map, &PyArray_Type, &mask, &PyArray_Type, &py_id))
-    return NULL;
+			&PyArray_Type, &map, &PyArray_Type, &mask, &PyArray_Type, &py_id)){
+    PrintError("Wrong number of input arguments");
+      return NULL;}
   /*Raise errors if input matrix is missing*/
-  if (NULL == data)
-    return NULL;
-  if (NULL == map)
-    return NULL;
-  if (NULL == mask)
-    return NULL;
-  if (NULL == py_id)
-    return NULL;
+  if (NULL == data){
+    PrintError("No data array input.");
+    return NULL;}
+  if (NULL == map){
+    PrintError("No map array input.");
+    return NULL;}
+  if (NULL == mask){
+    PrintError("No mask array input.");
+    return NULL;}
+  if (NULL == py_id){
+    PrintError("No data index array input.");
+    return NULL;}
 
   /* get detector index */
   for(k = 0; k < NDIM; k++)
@@ -268,8 +284,9 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args)
   /* Get data header */
   headers = NULL;
   headers = PyObject_GetAttrString((PyObject*)data, "header");
-  if (NULL == headers)
-    return NULL;
+  if (NULL == headers){
+    PrintError("data array does not have an header attribute.");
+    return NULL;}
 
   py_image_header = PyList_GetItem(headers, id[2]);
   PyDict_AsImageHeader(py_image_header, &ih);
@@ -293,13 +310,16 @@ static PyObject *call_full_unit_vector%(suffix)s(PyObject *self, PyObject *args)
 
   /* Parse tuples separately since args will differ between C fcns */
   if (!PyArg_ParseTuple(args, "O!O!", &PyArray_Type, &data,
-			&PyArray_Type, &uarray))
-    return NULL;
+			&PyArray_Type, &uarray)){
+    PrintError("Wrong number of input arguments.");
+    return NULL;}
   /*Raise errors if input matrix is missing*/
-  if (NULL == data)
-    return NULL;
-  if (NULL == uarray)
-    return NULL;
+  if (NULL == data){
+    PrintError("No data array input.");
+    return NULL;}
+  if (NULL == uarray){
+    PrintError("No u array input.");
+    return NULL;}
 
   /* Siddon for each time index */
   return full_unit_vector(data, uarray);
@@ -314,19 +334,23 @@ static PyObject *call_image_unit_vector%(suffix)s(PyObject *self, PyObject *args
   image_header ih;
   /* Parse tuples separately since args will differ between C fcns */
   if (!PyArg_ParseTuple(args, "O!O!i", &PyArray_Type, &data,
-			&PyArray_Type, &uarray, &t))
-    return NULL;
+			&PyArray_Type, &uarray, &t)){
+    PrintError("Wrong number of input arguments.");
+    return NULL;}
   /*Raise errors if input matrix is missing*/
-  if (NULL == data)
-    return NULL;
-  if (NULL == uarray)
-    return NULL;
+  if (NULL == data){
+    PrintError("No data array input.");
+    return NULL;}
+  if (NULL == uarray){
+    PrintError("No u array input.");
+    return NULL;}
 
   /* Get data header */
   headers = NULL;
   headers = PyObject_GetAttrString((PyObject*)data, "header");
-  if (NULL == headers)
-    return NULL;
+  if (NULL == headers){
+    PrintError("data array does not have an header attribute.");
+    return NULL;}
 
   py_image_header = PyList_GetItem(headers, t);
   PyDict_AsImageHeader(py_image_header, &ih);
@@ -344,26 +368,25 @@ static PyObject * call_full_intersection_parameters%(suffix)s(PyObject * self, P
   /* Parse tuples separately since args will differ between C fcns */
   if (!PyArg_ParseTuple(args, "O!O!O!O!O!", &PyArray_Type, &data, &PyArray_Type, &map,
 			&PyArray_Type, &uarray, &PyArray_Type, &a1array, 
-			&PyArray_Type, &anarray, &PyArray_Type))
-  {
-    PyErr_SetString(PyExc_ValueError, "Wrong input.");
+			&PyArray_Type, &anarray, &PyArray_Type)){
+    PrintError("Wrong input.");
     return NULL;
   }
   /*Raise errors if input matrix is missing*/
   if (NULL == data){
-    PyErr_SetString(PyExc_ValueError, "No data array input.");
+    PrintError("No data array input.");
     return NULL;}
   if (NULL == map){
-    PyErr_SetString(PyExc_ValueError, "No map array input.");
+    PrintError("No map array input.");
     return NULL;}
   if (NULL == uarray){
-    PyErr_SetString(PyExc_ValueError, "No u array input.");
+    PrintError("No u array input.");
     return NULL;}
   if (NULL == a1array){
-    PyErr_SetString(PyExc_ValueError, "No a1 array input.");
+    PrintError("No a1 array input.");
     return NULL;}
   if (NULL == anarray){
-    PyErr_SetString(PyExc_ValueError, "No an array input.");
+    PrintError("No an array input.");
     return NULL;}
 
   /* Siddon for each time index */
@@ -384,25 +407,33 @@ static PyObject * call_image_intersection_parameters%(suffix)s(PyObject * self, 
   unsigned int k;
   /* Parse tuples separately since args will differ between C fcns */
   if (!PyArg_ParseTuple(args, "O!O!O!O!O!i", &PyArray_Type, &data, &PyArray_Type, &map,
-			&PyArray_Type, &uarray, &PyArray_Type, &a1array, &PyArray_Type, &anarray, &t))
+			&PyArray_Type, &uarray, &PyArray_Type, &a1array, &PyArray_Type, &anarray, &t)){
+    PrintError("Wrong input.");
     return NULL;
+  }
   /*Raise errors if input matrix is missing*/
-  if (NULL == data)
-    return NULL;
-  if (NULL == map)
-    return NULL;
-  if (NULL == uarray)
-    return NULL;
-  if (NULL == a1array)
-    return NULL;
-  if (NULL == anarray)
-    return NULL;
+  if (NULL == data){
+    PrintError("No data array input.");
+    return NULL;}
+  if (NULL == map){
+    PrintError("No map array input.");
+    return NULL;}
+  if (NULL == uarray){
+    PrintError("No u array input.");
+    return NULL;}
+  if (NULL == a1array){
+    PrintError("No a1 array input.");
+    return NULL;}
+  if (NULL == anarray){
+    PrintError("No an array input.");
+    return NULL;}
 
   /* Get data header */
   headers = NULL;
   headers = PyObject_GetAttrString((PyObject*)data, "header");
-  if (NULL == headers)
-    return NULL;
+  if (NULL == headers){
+    PrintError("data array does not have an header attribute.");
+    return NULL;}
 
   py_image_header = PyList_GetItem(headers, t);
   PyDict_AsImageHeader(py_image_header, &ih);
