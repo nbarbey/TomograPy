@@ -466,8 +466,9 @@ static PyObject * conic_full_projector(PyArrayObject * data, PyArrayObject * map
   /* Get data header */
   headers = NULL;
   headers = PyObject_GetAttrString((PyObject*)data, "header");
-  if (NULL == headers)
-    return NULL;
+  if (NULL == headers){
+    PrintError("The data array does not have an header attribute.");
+    return NULL;}
 
   /* allocate memory for array of image_headers*/
   ih_array = (image_header*) malloc(data->dimensions[2] * sizeof(image_header));
@@ -586,8 +587,9 @@ static PyObject * full_unit_vector(PyArrayObject * data, PyArrayObject * uarray)
   /* Get data header */
   headers = NULL;
   headers = PyObject_GetAttrString((PyObject*)data, "header");
-  if (NULL == headers)
-    return NULL;
+  if (NULL == headers){
+    PrintError("The data array does not have an header attribute.");
+    return NULL;}
 
   /* allocate memory for array of image_headers*/
   ih_array = (image_header*) malloc(data->dimensions[2] * sizeof(image_header));
@@ -655,8 +657,9 @@ PyObject * full_intersection_parameters(PyArrayObject * data, PyArrayObject * ma
   /* Get data header */
   headers = NULL;
   headers = PyObject_GetAttrString((PyObject*)data, "header");
-  if (NULL == headers)
-    return NULL;
+  if (NULL == headers){
+    PrintError("The data array does not have an header attribute.");
+    return NULL;}
 
   /* allocate memory for array of image_headers*/
   ih_array = (image_header*) malloc(data->dimensions[2] * sizeof(image_header));
