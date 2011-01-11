@@ -9,9 +9,7 @@ import lo
 
 from test_cases import *
 
-#models = [siddon.models.srt, siddon.models.stsrt, siddon.models.thomson]
-#models = [siddon.models.srt, siddon.models.stsrt, ]
-models = [siddon.models.srt, ]
+models = [siddon.models.srt, siddon.models.stsrt, siddon.models.thomson]
 
 def check_model(model, im_h, obj_h):
     obj = siddon.simu.object_from_header(obj_h)
