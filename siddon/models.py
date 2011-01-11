@@ -1,7 +1,9 @@
 """
 Defines various tomography models and priors to be used with an optimizer.
 
-- srt : Solar Rotational Tomography (with priors)
+- srt : Solar rotational tomography (with priors)
+- stsrt : Smooth temporal rotational tomography
+- thomson : Thomson scattering model
 """
 import numpy as np
 import copy
