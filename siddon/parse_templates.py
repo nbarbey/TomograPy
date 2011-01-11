@@ -8,10 +8,12 @@ c_siddon_template = "siddon" + os.sep + "C_siddon.c.template"
 templates = (c_siddon_template,)# c_siddon4d_template)
 
 # values to replace in templates
-ctypes = {"float":"float32", "double":"float64",
-          "int":"int16", "long":"int32"}
+ctypes = {"float":"float32", "double":"float64",}
+
 obstacles = {"none":None, "sun":"sun"}
 pjs = {"pj":"pj", "bpj":"bpj", "pjt":"pjt", "bpjt":"bpjt"}
+
+string_dict = {"f":"%f","d":"%d"}
 
 siddon_dict_list = []
 for ctype in ctypes:
@@ -36,6 +38,7 @@ def parse_template(filename, values=None):
     txt = f.read()
     f.close()
     if values is not None:
+        values.update(string_dict)
         txt = txt % values
     out_filename = set_filename(filename, values)
     if os.path.isfile(out_filename):

@@ -1,9 +1,12 @@
 """
 Defines various tomography models and priors to be used with an optimizer.
 
-- srt : Solar Rotational Tomography (with priors)
+- srt : Solar rotational tomography (with priors)
+- stsrt : Smooth temporal rotational tomography
+- thomson : Thomson scattering model
 """
 import numpy as np
+import copy
 import lo
 import siddon
 from lo_wrapper import siddon_lo, siddon4d_lo
@@ -44,10 +47,10 @@ def srt(data, cube, **kwargs):
 
     """
     # Model : it is Solar rotational tomography, so obstacle="sun".
-    P = siddon_lo(data.header, cube.header, obstacle="sun")
+    data_mask = solar.define_data_mask(data, **kwargs)
+    P = siddon_lo(data.header, cube.header, mask=data_mask, obstacle="sun")
     D = [lo.diff(cube.shape, axis=i) for i in xrange(cube.ndim)]
     P, D, obj_mask = _apply_object_mask(P, D, cube, **kwargs)
-    P, data_mask = _apply_data_mask(P, data, **kwargs)
     return P, D, obj_mask, data_mask
 
 def _apply_object_mask(P, D, cube, **kwargs):
@@ -94,40 +97,35 @@ def stsrt(data, cube, **kwargs):
     # Parse kwargs.
     obj_rmin = kwargs.get('obj_rmin', None)
     obj_rmax = kwargs.get('obj_rmax', None)
+    # mask data
+    data_mask = solar.define_data_mask(data, **kwargs)
     # define temporal groups
-    times = [solar.convert_time(t) for t in data.header['DATE_OBS']]
+    times = [solar.convert_time(h['DATE_OBS']) for h in data.header]
     ## if no interval is given separate every image
     dt_min = kwargs.get('dt_min', np.max(np.diff(times)) + 1)
     #groups = solar.temporal_groups(data, dt_min)
     ind = solar.temporal_groups_indexes(data, dt_min)
     n = len(ind)
-    # 4d model
-    cube_header = cube.header.copy()
-    cube_header.update('NAXIS', 4)
-    cube_header.update('NAXIS4', data.shape[-1])
-    P = siddon4d_lo(data.header, cube_header, obstacle="sun")
-    # define per group summation of maps
     # define new 4D cube
-    cube4 = cube.reshape(cube.shape + (1,)).repeat(n, axis=-1)
-    cube4.header.update('NAXIS', 4)
-    cube4.header.update('NAXIS4', cube4.shape[3])
-    cube4.header.update('CRVAL4', 0.)
-    cube4.header.update('CDELT4', dt_min)
-    S = group_sum(ind, cube, data)
-    P = P * S.T
+    cube4 = cube[..., np.newaxis].repeat(n, axis=-1)
+    cube4.header = copy.copy(cube.header)
+    cube4.header['NAXIS'] = 4
+    cube4.header['NAXIS4'] = cube4.shape[3]
+    # define 4d model
+    # XXX assumes all groups have same number of elements
+    ng = data.shape[-1] / n
+    P = siddon4d_lo(data.header, cube4.header, ng=ng, mask=data_mask, obstacle="sun")
     # priors
     D = [lo.diff(cube4.shape, axis=i) for i in xrange(cube4.ndim)]
     # mask object
     if obj_rmin is not None or obj_rmax is not None:
         Mo, obj_mask = mask_object(cube, **kwargs)
-        obj_mask = obj_mask.reshape(obj_mask.shape + (1,)).repeat(n, axis=-1)
+        obj_mask = obj_mask[..., np.newaxis].repeat(n, axis=-1)
         Mo = lo.mask(obj_mask)
         P = P * Mo.T
         D = [Di * Mo.T for Di in D]
     else:
         obj_mask = None
-    # mask data
-    P, data_mask = _apply_data_mask(P, data, **kwargs)
     return P, D, obj_mask, data_mask
 
 def mask_object(cube, **kwargs):
@@ -135,7 +133,7 @@ def mask_object(cube, **kwargs):
     obj_rmax = kwargs.get('obj_rmax', None)
     if obj_rmin is not None or obj_rmax is not None:
         obj_mask = solar.define_map_mask(cube, **kwargs)
-        Mo = lo.mask(obj_mask)
+        Mo = lo.mask(obj_mask, dtype=cube.dtype)
     return Mo, obj_mask
 
 def group_sum(ind, cube, data):

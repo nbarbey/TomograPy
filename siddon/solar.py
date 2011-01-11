@@ -3,6 +3,7 @@ Generic code for WCS compatible data.
 """
 import os
 import time
+import copy
 import pyfits
 import numpy as np
 import fitsarray as fa
@@ -42,18 +43,14 @@ def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
         update_header(fits_array)
         fits_array = fits_array.T
         if i == 0:
-            data = fa.InfoArray(fits_array.shape + (len(files),), header=dict(fits_array.header))
-            for k in data.header.keys():
-                if np.isscalar(data.header[k]):
-                    data.header[k] = np.asarray((data.header[k], ))
+            data = fa.InfoArray(fits_array.shape + (len(files),), header=[dict(fits_array.header),])
         data[..., i] = fits_array
         if i != 0:
-            for k in fits_array.header.keys():
-                if np.isscalar(fits_array.header[k]):
-                    data.header[k] = np.concatenate([data.header[k], np.asarray((fits_array.header[k], ))])
-                else:
-                    data.header[k] = np.concatenate([data.header[k], fits_array.header[k]])
+            data.header.append(dict(fits_array.header))
+    # ensure coherent data type
     data = data.astype(dtype)
+    for i in xrange(data.shape[-1]):
+        data.header[i]['BITPIX'] = fa.bitpix_inv[dtype.__name__]
     return data
 
 def update_header(array):
@@ -95,9 +92,9 @@ def update_header(array):
     array.header.update('lat', lat)
     array.header.update('rol', rol)
     array.header.update('d', d)
-    array.header.update('M0', xd)
-    array.header.update('M1', yd)
-    array.header.update('M2', zd)
+    array.header.update('M1', xd)
+    array.header.update('M2', yd)
+    array.header.update('M3', zd)
     # convert to radians
     array.header['CDELT1'] *= arcsecond_to_radian
     array.header['CDELT2'] *= arcsecond_to_radian
@@ -182,7 +179,7 @@ def time_compare(x, y):
     else: # a < b
         return -1
 
-def define_data_mask(data, data_rmin=None, data_rmax=None, 
+def define_data_mask(data, data_rmin=None, data_rmax=None, ring=None,
                      mask_negative=False, mask_nan=True, **kwargs):
     """
     Defines a mask of shape data.shape.
@@ -211,12 +208,14 @@ def define_data_mask(data, data_rmin=None, data_rmax=None,
     """
     data_mask = np.zeros(data.shape, dtype=bool)
     # if no radius limits no need to compute R
-    if data_rmin is not None or data_rmax is not None:
+    if data_rmin is not None or data_rmax is not None or ring is not None:
         R = distance_to_sun_center(data)
         if data_rmin is not None:
             data_mask[(R < data_rmin)] = 1
         if data_rmax is not None:
             data_mask[(R > data_rmax)] = 1
+        if ring is not None:
+            data_mask[(ring[0] < R) * (R < ring[1])] = 1
     if mask_negative:
         data_mask[data < 0.] = 1
     if mask_nan:
@@ -245,8 +244,8 @@ def distance_to_sun_center(data):
     # loop on images
     for i in xrange(data.shape[-1]):
         # get axes
-        crpix1 = data.header['CRPIX1'][i]
-        crpix2 = data.header['CRPIX2'][i]
+        crpix1 = data.header[i]['CRPIX1']
+        crpix2 = data.header[i]['CRPIX2']
         y = (np.arange(data.shape[0]) - crpix1) / Rsun[i]
         x = (np.arange(data.shape[0]) - crpix2) / Rsun[i]
         # generate 2D repeated axes
@@ -258,9 +257,9 @@ def distance_to_sun_center(data):
 def compute_rsun(data):
     rsun = np.empty(data.shape[-1])
     for i in xrange(data.shape[-1]):
-        d = data.header['D'][i]
-        cdelt1 = data.header['CDELT1'][i]
-        cdelt2 = data.header['CDELT2'][i]
+        d = data.header[i]['D']
+        cdelt1 = data.header[i]['CDELT1']
+        cdelt2 = data.header[i]['CDELT2']
         if cdelt1 != cdelt2:
             raise ValueError('Meaningless if cdelts are not equal.')
         rsun[i] = np.arctan(1. / d) / cdelt1
@@ -272,7 +271,7 @@ def define_map_mask(cube, obj_rmin=None, obj_rmax=None, **kwargs):
     """
     obj_mask = np.zeros(cube.shape, dtype=bool)
     if obj_rmin is not None or obj_rmax is not None:
-        R = map_radius(cube)
+        R = map_radius(fa.asfitsarray(cube))
         if obj_rmin is not None:
             obj_mask[R < obj_rmin] = 1
         if obj_rmax is not None:
@@ -297,27 +296,24 @@ def slice_data(data, s):
     """
     sd = 2 * (slice(None, None, None), ) + (s,)
     out = data[sd]
-    # copy header elements as it is not done usually
-    out.header = data.header.copy()
-    for k in data.header.keys():
-        out.header[k] = data.header[k][s].copy()
+    out.header = copy.copy(data.header[s])
     return out
 
 def concatenate(data_list):
     out = np.concatenate(data_list, axis=-1)
     # copy header and key values
-    header = data_list[0].header.copy()
-    for k in header.keys():
-        header[k] = data_list[0].header[k].copy()
-    # concatenate key values
-    for k in header.keys():
-        header[k] = np.concatenate([d.header[k] for d in data_list])
+    header = []
+    for d in data_list:
+        header += d.header
     out = fa.asinfoarray(out, header)
     return out
 
+def get_times(data):
+    return [convert_time(h['DATE_OBS']) for h in data.header]
+
 def sort_data_array(data):
+    times = get_times(data)
     # sort in time
-    times = [convert_time(t) for t in data.header['DATE_OBS']]
     ind = np.argsort(times)
     data_list = []
     for i in ind:
@@ -328,9 +324,16 @@ def sort_data_array(data):
 
 def temporal_groups_indexes(data, dt_min):
     # XXX buggy if no groups !!!
-    times = [convert_time(t) for t in data.header['DATE_OBS']]
+    times = get_times(data)
     ind1 = list(np.where(np.diff(times) < dt_min)[0])
     return ind1
+
+def temporal_groups_index_list(*kargs):
+    t = temporal_groups_indexes(*kargs)
+    return [range(ti, ti2) for ti, ti2 in zip(t[:-1], t[1:])]
+
+def temporal_groups_index_array(*kargs):
+    return np.asarray(temporal_groups_index_list(*kargs))
 
 def temporal_groups(data, dt_min):
     """
