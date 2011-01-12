@@ -295,8 +295,8 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args)
   py_map_header = (PyObject*) PyObject_GetAttrString((PyObject*)map, "header");
   PyDict_AsMapHeader(py_map_header, &mh);
 
-  gamma = (id[0] - ih.s[0]) * ih.p[0];
-  lambda = (id[1] - ih.s[1]) * ih.p[1];
+  gamma = (id[0] - ih.s[0] + 1) * ih.p[0];
+  lambda = (id[1] - ih.s[1] + 1) * ih.p[1];
   define_rotated_unit_vector(lambda, gamma, ih.R, u0);
   ray_projector(ih.M, u0, data, id, map, &mh);
   Py_RETURN_NONE;
@@ -627,13 +627,13 @@ void image_unit_vector(PyArrayObject * data, PyArrayObject * uarray, unsigned in
   /* loops on angles (detectors pixels) */
   for(id[0] = 0 ; id[0] < n1 ; id[0]++)
   {
-    gamma = (id[0] - ih->s[0]) * ih->p[0];
+    gamma = (id[0] - ih->s[0] + 1) * ih->p[0];
     for(id[1] = 0 ; id[1] < n2 ; id[1]++)
     {
       /* skip computation if the value is a NaN */
       if((isNaN(IND3(data, id)) == 0))
       {
-	lambda = (id[1] - ih->s[1]) * ih->p[1];
+	lambda = (id[1] - ih->s[1] + 1) * ih->p[1];
 	define_rotated_unit_vector(lambda, gamma, ih->R, u0);
 	IND3t(uarray, id, 0) = u0[0];
 	IND3t(uarray, id, 1) = u0[1];
