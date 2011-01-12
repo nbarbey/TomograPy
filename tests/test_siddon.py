@@ -149,7 +149,7 @@ def check_special_cases(im_h, obj_h):
         flag, p, a1, amin = siddon.siddon.intersect_cube(data, obj, u)
         assert_array_equal(data != 0, flag)
 
-def test_scale_factor():
+def test_special_cases():
     for im_h in image_headers:
         for obj_h in object_headers:
             yield check_special_cases, im_h, obj_h
