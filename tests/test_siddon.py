@@ -113,3 +113,46 @@ def test_sum_bpj():
     siddon.siddon.backprojector(data, obj1)
     siddon.siddon.backprojector(data, obj2)
     assert_equal(np.sum(obj1), obj2)
+
+# test that projection of tens equal tens times the projection of ones
+
+def check_scale_factor(im_h, obj_h):
+    obj1 = siddon.simu.object_from_header(obj_h)
+    obj10 = siddon.simu.object_from_header(obj_h)
+    data1 = siddon.simu.circular_trajectory_data(**im_h)
+    data10 = siddon.simu.circular_trajectory_data(**im_h)
+    if data1.dtype == obj1.dtype:
+        data1[:] = 0.
+        data10[:] = 0.
+        obj1[:] = 1.
+        obj10[:] = 10.
+        siddon.projector(data1, obj1)
+        siddon.projector(data10, obj10)
+        assert_array_almost_equal(10 * data1, data10)
+
+def test_scale_factor():
+    for im_h in image_headers:
+        for obj_h in object_headers:
+            yield check_scale_factor, im_h, obj_h
+
+# test special cases in which the line of sight is crossing voxel
+# corners
+
+def check_special_cases(im_h, obj_h):
+    obj = siddon.simu.object_from_header(obj_h)
+    data = siddon.simu.circular_trajectory_data(n_images=17, **im_h)
+    if data.dtype == obj.dtype:
+        data[:] = 0.
+        obj[:] = 1.
+        siddon.projector(data, obj)
+        u = siddon.siddon.C_full_unit_vector(data)
+        flag, p, a1, amin = siddon.siddon.intersect_cube(data, obj, u)
+        assert_array_equal(data != 0, flag)
+
+def test_scale_factor():
+    for im_h in image_headers:
+        for obj_h in object_headers:
+            yield check_special_cases, im_h, obj_h
+
+if __name__ == "__main__":
+    nose.run(argv=['', __file__])
