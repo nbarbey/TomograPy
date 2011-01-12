@@ -533,8 +533,8 @@ def full_unit_vector(data):
     # loop on image
     for i, h in enumerate(data.header):
         R = dict_to_array(h, "R")
-        g = (np.arange(data.shape[0]) - h['CRPIX1']) * h['CDELT1']
-        l = (np.arange(data.shape[1]) - h['CRPIX2']) * h['CDELT2']
+        g = (np.arange(data.shape[0]) - h['CRPIX1'] + 1) * h['CDELT1']
+        l = (np.arange(data.shape[1]) - h['CRPIX2'] + 1) * h['CDELT2']
         L, G = np.meshgrid(l, g)
         # intermediary unit vector
         u2[..., 0] = np.cos(L) * np.cos(G)
@@ -597,7 +597,7 @@ def full_intersection_parameters(data, obj, u):
 def full_intersection_steps(obj, u):
     pshape = dict_to_array(obj.header, "PSHAPE")
     p = np.empty(u.shape)
-    for t in xrange(data.shape[-1]):
+    for t in xrange(u.shape[-2]):
         for i in xrange(3):
             p[..., t, i] = pshape[i] / u[..., t, i]
     return p
