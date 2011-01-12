@@ -240,14 +240,14 @@ def distance_to_sun_center(data):
       RSUN is the radius of the Sun on one image in number of pixels.
     """
     R = np.zeros(data.shape)
-    Rsun = compute_rsun(data)
+    Rsun1, Rsun2 = compute_rsun(data)
     # loop on images
     for i in xrange(data.shape[-1]):
         # get axes
         crpix1 = data.header[i]['CRPIX1']
         crpix2 = data.header[i]['CRPIX2']
-        y = (np.arange(data.shape[0]) - crpix1) / Rsun[i]
-        x = (np.arange(data.shape[0]) - crpix2) / Rsun[i]
+        y = (np.arange(data.shape[0]) - crpix1) / Rsun1[i]
+        x = (np.arange(data.shape[0]) - crpix2) / Rsun2[i]
         # generate 2D repeated axes
         X, Y = np.meshgrid(x, y)
         # radius computation
@@ -255,15 +255,13 @@ def distance_to_sun_center(data):
     return R
 
 def compute_rsun(data):
-    rsun = np.empty(data.shape[-1])
+    rsun1 = np.empty(data.shape[-1])
+    rsun2 = np.empty(data.shape[-1])
     for i in xrange(data.shape[-1]):
         d = data.header[i]['D']
-        cdelt1 = data.header[i]['CDELT1']
-        cdelt2 = data.header[i]['CDELT2']
-        if cdelt1 != cdelt2:
-            raise ValueError('Meaningless if cdelts are not equal.')
-        rsun[i] = np.arctan(1. / d) / cdelt1
-    return rsun
+        rsun1[i] = np.arctan(1. / d) / data.header[i]['CDELT1']
+        rsun2[i] = np.arctan(1. / d) / data.header[i]['CDELT2']
+    return rsun1, rsun2
 
 def define_map_mask(cube, obj_rmin=None, obj_rmax=None, **kwargs):
     """
