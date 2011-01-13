@@ -136,7 +136,7 @@ inline void define_rotated_unit_vector(CTYPE, CTYPE, CTYPE[NDIM][NDIM], CTYPE[ND
 /* Comupte the distance from the map cube reference pixel (center). */
 inline CTYPE distance_to_center(CTYPE[NDIM], CTYPE[NDIM], CTYPE);
 /* Perform projection / backprojection of an image set. */
-inline static PyObject * conic_full_projector(PyArrayObject*, PyArrayObject*, PyArrayObject *);
+inline static PyObject * conic_full_projector(PyArrayObject*, PyArrayObject*, PyArrayObject *, unsigned int);
 /* to get a dict value and recast it into CTYPE*/
 inline CTYPE get_dict_ctype(PyObject * , char [8]);
 inline void PyDict_AsMapHeader(PyObject * , map_header *);
@@ -179,10 +179,10 @@ static PyObject *call_conic_full_projector%(suffix)s(PyObject *self, PyObject *a
 {
   /* Input and output matrices to be extracted from args */
   PyArrayObject *data, *map, *mask;
-
+  unsigned int nthread = 0;
   /* Parse tuples separately since args will differ between C fcns */
-  if (!PyArg_ParseTuple(args, "O!O!O!", &PyArray_Type, &data,
-			&PyArray_Type, &map, &PyArray_Type, &mask)){
+  if (!PyArg_ParseTuple(args, "O!O!O!I", &PyArray_Type, &data,
+			&PyArray_Type, &map, &PyArray_Type, &mask, &nthread)){
     PrintError("Wrong number of input arguments");
       return NULL;}
   /*Raise errors if input matrix is missing*/
@@ -197,7 +197,7 @@ static PyObject *call_conic_full_projector%(suffix)s(PyObject *self, PyObject *a
     return NULL;}
 
   /* Siddon for each time index */
-  return conic_full_projector(data, map, mask);
+  return conic_full_projector(data, map, mask, nthread);
 }
 
 static PyObject *call_conic_image_projector%(suffix)s(PyObject *self, PyObject *args)
@@ -453,7 +453,7 @@ static PyObject * call_image_intersection_parameters%(suffix)s(PyObject * self, 
 
 /* C functions */
 
-static PyObject * conic_full_projector(PyArrayObject * data, PyArrayObject * map, PyArrayObject * mask)
+static PyObject * conic_full_projector(PyArrayObject * data, PyArrayObject * map, PyArrayObject * mask, unsigned int nthread)
 {
   /* declarations */
   PyObject * py_map_header, *headers, *py_image_header;
@@ -483,7 +483,7 @@ static PyObject * conic_full_projector(PyArrayObject * data, PyArrayObject * map
   PyDict_AsMapHeader(py_map_header, &mh);
   /* Loop on the time / image dimension */
   Py_BEGIN_ALLOW_THREADS
-  #pragma omp parallel default (shared) private(t)
+  #pragma omp parallel num_threads(nthread) default (shared) private(t)
   #pragma omp for
   for(t = 0 ; t < data->dimensions[2] ; t++){
     conic_image_projector(data, map, mask, t, &ih_array[t], &mh);

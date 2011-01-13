@@ -83,7 +83,7 @@ for method in c_methods:
 INF = 100000
 
 # projector
-def projector(data, cube, mask=None, obstacle=None):
+def projector(data, cube, mask=None, obstacle=None, nthread=0):
     """
     Project a cubic map into a data cube using the Siddon algorithm.
     The data cube is updated in-place, so you should make a copy before
@@ -113,11 +113,11 @@ def projector(data, cube, mask=None, obstacle=None):
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"pj"
                       }
-    proj_str = "conic_full_projector" + suffix_str + "(data, cube, mask)"
+    proj_str = "conic_full_projector" + suffix_str + "(data, cube, mask, nthread)"
     exec(proj_str % my_siddon_dict)
     return data
 
-def backprojector(data, cube, mask=None, obstacle=None):
+def backprojector(data, cube, mask=None, obstacle=None, nthread=0):
     """
     Backproject a data cube into a cubic map using the Siddon algorithm.
     The map cube is updated in-place, so you should make a copy before
@@ -147,11 +147,11 @@ def backprojector(data, cube, mask=None, obstacle=None):
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"bpj"
                       }
-    proj_str = "conic_full_projector" + suffix_str + "(data, cube, mask)"
+    proj_str = "conic_full_projector" + suffix_str + "(data, cube, mask, nthread)"
     exec(proj_str % my_siddon_dict)
     return cube
 
-def projector4d(data, cube, mask=None, obstacle=None):
+def projector4d(data, cube, mask=None, obstacle=None, nthread=0):
     """
     Project a cubic map into a data cube using the Siddon algorithm.
     The data cube is updated in-place, so you should make a copy before
@@ -181,11 +181,11 @@ def projector4d(data, cube, mask=None, obstacle=None):
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"pjt"
                       }
-    proj_str = "conic_full_projector" + suffix_str + "(data, cube, mask)"
+    proj_str = "conic_full_projector" + suffix_str + "(data, cube, mask, nthread)"
     exec(proj_str % my_siddon_dict)
     return data
 
-def backprojector4d(data, cube, mask=None, obstacle=None):
+def backprojector4d(data, cube, mask=None, obstacle=None, nthread=0):
     """
     Backproject a data cube into a cubic map using the Siddon algorithm.
     The map cube is updated in-place, so you should make a copy before
@@ -215,7 +215,7 @@ def backprojector4d(data, cube, mask=None, obstacle=None):
                       "obstacle":obstacles_inv[obstacle],
                       "pj":"bpjt"
                       }
-    proj_str = "conic_full_projector" + suffix_str + "(data, cube, mask)"
+    proj_str = "conic_full_projector" + suffix_str + "(data, cube, mask, nthread)"
     exec(proj_str % my_siddon_dict)
     return cube
 
