@@ -22,12 +22,12 @@ ext_modules = [Extension(join('siddon', '_' + name + pt.suffix_str % siddon_dict
                          ) for siddon_dict in pt.siddon_dict_list for name in pt.names]
 
 setup(name='Siddon',
-      version='0.2.3',
+      version='0.3.0',
       description='Solar tomography and Siddon algorithm',
       author='Nicolas Barbey',
       author_email='nicolas.barbey@cea.fr',
       url="http://nbarbey.dyndns.org/software/siddon.html",
-      requires=['numpy', 'scipy', 'fitsarray', 'pyfits'],
+      requires=['numpy', 'scipy', 'pyfits', 'fitsarray', 'lo'],
       packages=['siddon'],
       ext_modules=ext_modules
       )

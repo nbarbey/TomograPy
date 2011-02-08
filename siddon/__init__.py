@@ -31,3 +31,5 @@ except ImportError:
 if 'lo' in locals():
     from lo_wrapper import *
 
+
+version = "0.3.0"
