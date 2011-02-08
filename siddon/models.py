@@ -128,12 +128,15 @@ def stsrt(data, cube, **kwargs):
         obj_mask = None
     return P, D, obj_mask, data_mask
 
-def mask_object(cube, **kwargs):
+def mask_object(cube, decimate=False, remove_nan=False, **kwargs):
     obj_rmin = kwargs.get('obj_rmin', None)
     obj_rmax = kwargs.get('obj_rmax', None)
     if obj_rmin is not None or obj_rmax is not None:
         obj_mask = solar.define_map_mask(cube, **kwargs)
-        Mo = lo.mask(obj_mask, dtype=cube.dtype)
+        if decimate:
+            Mo = lo.decimate(obj_mask, dtype=cube.dtype)
+        else:
+            Mo = lo.mask(obj_mask, dtype=cube.dtype, remove_nan=remove_nan)
     return Mo, obj_mask
 
 def group_sum(ind, cube, data):
@@ -177,20 +180,21 @@ def thomson(data, cube, u=.5, **kwargs):
     obj_mask : object mask array
     data_mask : data mask array
     """
+    # data mask
+    data_mask = solar.define_data_mask(data, **kwargs)
     # projector
     pb = kwargs.get('pb', 'pb')
     if pb == 'pb':
-        P = pb_thomson_lo(data, cube, u)
+        P = pb_thomson_lo(data, cube, u, mask=data_mask)
     else:
         raise ValueError('Only pb implemented for now.')
     # priors
     D = [lo.diff(cube.shape, axis=i) for i in xrange(cube.ndim)]
     # masks
-    P, D, obj_mask = _apply_object_mask(P, D, cube, **kwargs)
-    P, data_mask = _apply_data_mask(P, data, **kwargs)
+    P, D, obj_mask = _apply_object_mask(P, D, cube, remove_nan=True, **kwargs)
     return P, D, obj_mask, data_mask
 
-def pb_thomson_lo(data, in_map, u):
+def pb_thomson_lo(data, in_map, u, mask=None):
     """Defines thomson scattering linear operator"""
     # data coefs
     data_coefs = _pb_data_coef(data).flatten()
@@ -199,7 +203,7 @@ def pb_thomson_lo(data, in_map, u):
     map_coefs = _pb_map_coef(in_map, u).flatten()
     M = lo.diag(map_coefs)
     # projection
-    P = siddon_lo(data.header, in_map.header, obstacle="sun")
+    P = siddon_lo(data.header, in_map.header, obstacle="sun", mask=mask)
     # thomson lo
     T = O * P * M
     return T
