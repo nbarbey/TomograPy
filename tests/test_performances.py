@@ -13,8 +13,8 @@ nthread_max = mp.cpu_count()
 d = 200
 
 def test_cores():
-    obj = siddon.centered_cubic_map(3, 128)
-    data = siddon.centered_stack(siddon.fov(obj, d), 128, n_images=32)
+    obj = siddon.centered_cubic_map(3, 256)
+    data = siddon.centered_stack(siddon.fov(obj, d), 128, n_images=64)
     # projection
     pj_times = np.empty(nthread_max + 1)
     pj_times[0] = time.time()
@@ -30,11 +30,12 @@ def test_cores():
         bpj_times[nt + 1] = time.time()
     bpj_times = bpj_times[1:] - bpj_times[:-1]
     # pretty print
-    text = 'cores'
+    text = ''
+    text += 'Cores'
     text += ''.join([' & ' + str(i + 1)  for i in xrange(nthread_max)])
-    text += ' \\\\ \n' + 'pj'
+    text += ' \\\\ \n' + 'Projection (s)'
     text += ''.join([' & ' + str(pjt) for pjt in pj_times])
-    text += ' \\\\ \n' + 'bpj'
+    text += ' \\\\ \n' + 'Backprojection (s)'
     text += ''.join([' & ' + str(bpjt) for bpjt in bpj_times])
     text += ' \\\\ \n'
     print text
