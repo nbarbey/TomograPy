@@ -1,1 +1,3 @@
-siddon/C_siddon.c.template
+include siddon/C_siddon.c.template
+exclude siddon/*.c
+exclude siddon/*.so
