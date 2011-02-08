@@ -8,9 +8,9 @@ obj = siddon.siddon.centered_cubic_map(3, 128, fill=1.)
 n = 20
 # reshape object for 4d model
 obj4 = obj.reshape(obj.shape + (1,)).repeat(n, axis=-1)
-obj4.header.update('NAXIS', 4)
-obj4.header.update('NAXIS4', obj4.shape[3])
-obj4.header.update('CRVAL4', 0.)
+obj4.header['NAXIS'] = 4
+obj4.header['NAXIS4'] = obj4.shape[3]
+obj4.header['CRVAL4'] = 0.
 
 # data 
 radius = 200

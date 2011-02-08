@@ -49,7 +49,7 @@ kwargs = {'obj_rmin':1., #'obj_rmax':1.3,
           'mask_negative':False, 'dt_min':100}
 P, D, obj_mask, data_mask = siddon.models.stsrt(data, obj, **kwargs)
 # hyperparameters
-hypers = (1e-1, 1e-1, 1e-1, 1e5)
+hypers = (1e-1, 1e-1, 1e-1, 1e3)
 # test time for one projection
 b = data.ravel()
 t = time.time()
