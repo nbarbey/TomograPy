@@ -9,7 +9,7 @@ import lo
 
 from test_cases import *
 
-models = [siddon.models.srt, siddon.models.stsrt, siddon.models.thomson]
+models = [siddon.models.srt, siddon.models.stsrt, ]
 
 def check_model(model, im_h, obj_h):
     obj = siddon.simu.object_from_header(obj_h)
@@ -19,7 +19,7 @@ def check_model(model, im_h, obj_h):
     im_h['max_lon'] = 3 * np.pi
     data = siddon.simu.circular_trajectory_data(**im_h)
     if obj.dtype == data.dtype:
-        P, D, obj_mask, data_mask = model(data, obj, obj_rmin=1)
+        P, D, obj_mask, data_mask = model(data, obj, obj_rmin=1.)
         w = (P.T * np.ones(data.size)).reshape(obj_mask.shape)
         is_seen = (w != 0)
         new_obj = fa.FitsArray(obj_mask.shape)
