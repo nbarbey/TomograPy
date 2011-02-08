@@ -1,0 +1,8 @@
+#!/bin/bash
+mkdir doc
+pydoc2 -w siddon
+mv siddon.html doc/
+cd siddon
+pydoc2 -w ./
+rename '' siddon. *.html
+mv *.html ../doc/
