@@ -49,7 +49,7 @@ def srt(data, cube, **kwargs):
     # Model : it is Solar rotational tomography, so obstacle="sun".
     data_mask = solar.define_data_mask(data, **kwargs)
     P = siddon_lo(data.header, cube.header, mask=data_mask, obstacle="sun")
-    D = [lo.diff(cube.shape, axis=i) for i in xrange(cube.ndim)]
+    D = smoothness_prior(cube, kwargs.get("height_prior", False))
     P, D, obj_mask = _apply_object_mask(P, D, cube, **kwargs)
     return P, D, obj_mask, data_mask
 
@@ -81,6 +81,27 @@ def _apply_data_mask(P, data, **kwargs):
     else:
         data_mask = None
     return P, data_mask
+
+def smoothness_prior(my_map, height_prior=False):
+    """
+    Defines a smoothness prior.
+    """
+    D = [lo.diff(my_map.shape, axis=i) for i in xrange(my_map.ndim)]
+    if height_prior:
+        r = _radius_map(my_map)
+        R = lo.diag(r.ravel())
+        D = [Di * R for Di in D]
+    return D
+
+def _radius_map(my_map):
+    from fitsarray import asfitsarray
+    x, y, z = asfitsarray(my_map).axes()
+    x2 = x ** 2
+    y2 = y ** 2
+    z2 = z ** 2
+    X2, Y2 = np.meshgrid(x2, y2)
+    R = np.dstack([X2 + Y2 + z2i for z2i in z2])
+    return R
 
 def stsrt(data, cube, **kwargs):
     """
