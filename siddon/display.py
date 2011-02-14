@@ -1,8 +1,8 @@
-import numpy as np
+import time
 from matplotlib import pyplot as plt
 from scipy.ndimage import map_coordinates
 
-def data_movie(data, fig=None, **kwargs):
+def data_movie(data, fig=None, pause=None, **kwargs):
     """
     Display all images of a data cube as a movie.
 
@@ -22,12 +22,17 @@ def data_movie(data, fig=None, **kwargs):
     if fig is None:
         fig = plt.figure()
     a = fig.gca()
+    dmin, dmax = data.min(), data.max()
     n = data.shape[-1]
     im0 = a.imshow(data[..., 0].T, **kwargs)
     plt.draw()
     for k in xrange(n):
         im0.set_data(data[..., k].T)
+        plt.title("Image " + str(k))
+        plt.clim([dmin, dmax])
         plt.draw()
+        if pause is not None:
+            time.sleep(pause)
 
 def sinogram(data, r, amin=-np.pi, amax=np.pi, n=None, fig=None, **kwargs):
     """
