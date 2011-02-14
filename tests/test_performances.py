@@ -13,8 +13,8 @@ nthread_max = mp.cpu_count()
 d = 200
 
 def test_cores():
-    obj = siddon.centered_cubic_map(3, 256)
-    data = siddon.centered_stack(siddon.fov(obj, d), 128, n_images=64)
+    obj = siddon.centered_cubic_map(3, 128)
+    data = siddon.centered_stack(siddon.fov(obj, d), 512, n_images=64)
     # projection
     pj_times = np.empty(nthread_max + 1)
     pj_times[0] = time.time()
@@ -44,10 +44,64 @@ def test_n_images():
     NotImplemented
 
 def test_image_shape():
-    NotImplemented
+    obj = siddon.centered_cubic_map(3, 128)
+    image_shapes = [128, 256, 512, 1024]
+    # projection
+    pj_times = np.empty(nthread_max + 1)
+    pj_times[0] = time.time()
+    for s in image_shapes:
+        data = siddon.centered_stack(siddon.fov(obj, d), s, n_images=64)
+        siddon.projector(data, obj)
+        pj_times[nt + 1] = time.time()
+    pj_times = pj_times[1:] - pj_times[:-1]
+    # backprojection
+    bpj_times = np.empty(nthread_max + 1)
+    bpj_times[0] = time.time()
+    for s in image_shapes:
+        data = siddon.centered_stack(siddon.fov(obj, d), s, n_images=64)
+        siddon.backprojector(data, obj)
+        bpj_times[nt + 1] = time.time()
+    bpj_times = bpj_times[1:] - bpj_times[:-1]
+    # pretty print
+    text = ''
+    text += 'Image shape'
+    text += ''.join([' & ' + str(s) + "\times" + str(s)  for s in image_shapes])
+    text += ' \\\\ \n' + 'Projection (s)'
+    text += ''.join([' & ' + str(pjt) for pjt in pj_times])
+    text += ' \\\\ \n' + 'Backprojection (s)'
+    text += ''.join([' & ' + str(bpjt) for bpjt in bpj_times])
+    text += ' \\\\ \n'
+    print text
 
 def test_map_shape():
-    NotImplemented
+    data = siddon.centered_stack(siddon.fov(obj, d), s, n_images=64)
+    cube_shapes = [128, 256, 512, 1024]
+    # projection
+    pj_times = np.empty(nthread_max + 1)
+    pj_times[0] = time.time()
+    for s in cube_shapes:
+        obj = siddon.centered_cubic_map(3, s)
+        siddon.projector(data, obj)
+        pj_times[nt + 1] = time.time()
+    pj_times = pj_times[1:] - pj_times[:-1]
+    # backprojection
+    bpj_times = np.empty(nthread_max + 1)
+    bpj_times[0] = time.time()
+    for s in cube_shapes:
+        obj = siddon.centered_cubic_map(3, s)
+        siddon.backprojector(data, obj)
+        bpj_times[nt + 1] = time.time()
+    bpj_times = bpj_times[1:] - bpj_times[:-1]
+    # pretty print
+    text = ''
+    text += 'Cube shape'
+    text += ''.join([' & ' + str(s) + "$^3$"  for s in image_shapes])
+    text += ' \\\\ \n' + 'Projection (s)'
+    text += ''.join([' & ' + str(pjt) for pjt in pj_times])
+    text += ' \\\\ \n' + 'Backprojection (s)'
+    text += ''.join([' & ' + str(bpjt) for bpjt in bpj_times])
+    text += ' \\\\ \n'
+    print text
 
 if __name__ == "__main__":
     test_cores()
