@@ -65,7 +65,7 @@ def test_image_shape():
     # pretty print
     text = ''
     text += 'Image shape'
-    text += ''.join([' & ' + str(s) + "\times" + str(s)  for s in image_shapes])
+    text += ''.join([' & ' + str(s) + " $\\times$ " + str(s)  for s in image_shapes])
     text += ' \\\\ \n' + 'Projection (s)'
     text += ''.join([' & ' + str(pjt) for pjt in pj_times])
     text += ' \\\\ \n' + 'Backprojection (s)'
@@ -74,6 +74,7 @@ def test_image_shape():
     print text
 
 def test_map_shape():
+    obj = siddon.centered_cubic_map(3, 128)
     data = siddon.centered_stack(siddon.fov(obj, d), s, n_images=64)
     cube_shapes = [128, 256, 512, 1024]
     # projection
