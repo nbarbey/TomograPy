@@ -47,7 +47,7 @@ def test_image_shape():
     obj = siddon.centered_cubic_map(3, 128)
     image_shapes = [128, 256, 512, 1024]
     # projection
-    pj_times = np.empty(nthread_max + 1)
+    pj_times = np.empty(len(image_shapes))
     pj_times[0] = time.time()
     for i, s in enumerate(image_shapes):
         data = siddon.centered_stack(siddon.fov(obj, d), s, n_images=64)
@@ -55,7 +55,7 @@ def test_image_shape():
         pj_times[i + 1] = time.time()
     pj_times = pj_times[1:] - pj_times[:-1]
     # backprojection
-    bpj_times = np.empty(nthread_max + 1)
+    bpj_times = np.empty(len(image_shapes))
     bpj_times[0] = time.time()
     for i, s in enumerate(image_shapes):
         data = siddon.centered_stack(siddon.fov(obj, d), s, n_images=64)
@@ -78,7 +78,7 @@ def test_map_shape():
     data = siddon.centered_stack(siddon.fov(obj, d), 512, n_images=64)
     cube_shapes = [128, 256, 512, 1024]
     # projection
-    pj_times = np.empty(nthread_max + 1)
+    pj_times = np.empty(len(cube_shapes))
     pj_times[0] = time.time()
     for i, s in enumerate(cube_shapes):
         obj = siddon.centered_cubic_map(3, s)
@@ -86,7 +86,7 @@ def test_map_shape():
         pj_times[i + 1] = time.time()
     pj_times = pj_times[1:] - pj_times[:-1]
     # backprojection
-    bpj_times = np.empty(nthread_max + 1)
+    bpj_times = np.empty(len(cube_shapes))
     bpj_times[0] = time.time()
     for i, s in enumerate(cube_shapes):
         obj = siddon.centered_cubic_map(3, s)
