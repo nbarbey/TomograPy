@@ -96,7 +96,7 @@ def test_map_shape():
     # pretty print
     text = ''
     text += 'Cube shape'
-    text += ''.join([' & ' + str(s) + "$^3$"  for s in image_shapes])
+    text += ''.join([' & ' + str(s) + "$^3$"  for s in cube_shapes])
     text += ' \\\\ \n' + 'Projection (s)'
     text += ''.join([' & ' + str(pjt) for pjt in pj_times])
     text += ' \\\\ \n' + 'Backprojection (s)'
