@@ -75,7 +75,7 @@ def test_image_shape():
 
 def test_map_shape():
     obj = siddon.centered_cubic_map(3, 128)
-    data = siddon.centered_stack(siddon.fov(obj, d), s, n_images=64)
+    data = siddon.centered_stack(siddon.fov(obj, d), 512, n_images=64)
     cube_shapes = [128, 256, 512, 1024]
     # projection
     pj_times = np.empty(nthread_max + 1)
