@@ -1,4 +1,5 @@
 import time
+import numpy as np
 from matplotlib import pyplot as plt
 from scipy.ndimage import map_coordinates
 
