@@ -59,6 +59,7 @@ typedef struct
 {
   CTYPE s[NDIM];
   CTYPE p[NDIM];
+  CTYPE v[NDIM];
   CTYPE M[NDIM];
   CTYPE R[NDIM][NDIM];
 }image_header;
@@ -145,6 +146,9 @@ inline void PyDict_AsImageHeader(PyObject * , image_header *);
 /*to get los direction vector */
 inline static PyObject * full_unit_vector(PyArrayObject * , PyArrayObject * );
 inline void image_unit_vector(PyArrayObject * , PyArrayObject * , unsigned int , image_header * );
+
+/*pixel to physical coordinates*/
+inline CTYPE pixel2physical(unsigned int[NDIM], unsigned int, image_header *);
 
 /* intersection parameters */
 inline PyObject * full_intersection_parameters(PyArrayObject * data, PyArrayObject * map, PyArrayObject * uarray, PyArrayObject * a1array, PyArrayObject * anarray);
@@ -295,8 +299,8 @@ static PyObject *call_ray_projector%(suffix)s(PyObject *self, PyObject *args)
   py_map_header = (PyObject*) PyObject_GetAttrString((PyObject*)map, "header");
   PyDict_AsMapHeader(py_map_header, &mh);
 
-  gamma = (id[0] - ih.s[0] + 1) * ih.p[0];
-  lambda = (id[1] - ih.s[1] + 1) * ih.p[1];
+  gamma = pixel2physical(id, 0, &ih);
+  lambda = pixel2physical(id, 1, &ih);
   define_rotated_unit_vector(lambda, gamma, ih.R, u0);
   ray_projector(ih.M, u0, data, id, map, &mh);
   Py_RETURN_NONE;
@@ -509,13 +513,13 @@ void conic_image_projector(PyArrayObject * data, PyArrayObject *  map, PyArrayOb
   /* loops on angles (detectors pixels) */
   for(id[0] = 0 ; id[0] < n1 ; id[0]++)
   {
-    gamma = (id[0] - ih->s[0] + 1) * ih->p[0];
+    gamma = pixel2physical(id, 0, ih);
     for(id[1] = 0 ; id[1] < n2 ; id[1]++)
     {
       /* skip computation if the mask is equal to 1 at current detector index */
       if((IND3(mask, id)) == 0)
       {
-	lambda = (id[1] - ih->s[1] + 1) * ih->p[1];
+	lambda = pixel2physical(id, 1, ih);
 	define_rotated_unit_vector(lambda, gamma, ih->R, u0);
 	ray_projector(ih->M, u0, data, id, map, mh);
       }
@@ -627,13 +631,13 @@ void image_unit_vector(PyArrayObject * data, PyArrayObject * uarray, unsigned in
   /* loops on angles (detectors pixels) */
   for(id[0] = 0 ; id[0] < n1 ; id[0]++)
   {
-    gamma = (id[0] - ih->s[0] + 1) * ih->p[0];
+    gamma = pixel2physical(id, 0, ih);
     for(id[1] = 0 ; id[1] < n2 ; id[1]++)
     {
       /* skip computation if the value is a NaN */
       if((isNaN(IND3(data, id)) == 0))
       {
-	lambda = (id[1] - ih->s[1] + 1) * ih->p[1];
+	lambda = pixel2physical(id, 1, ih);
 	define_rotated_unit_vector(lambda, gamma, ih->R, u0);
 	IND3t(uarray, id, 0) = u0[0];
 	IND3t(uarray, id, 1) = u0[1];
@@ -1036,6 +1040,12 @@ CTYPE distance_to_center(CTYPE M[NDIM], CTYPE u0[NDIM], CTYPE ac)
   return d;
 }
 
+CTYPE pixel2physical(unsigned int id[NDIM], unsigned int axis, image_header * ih)
+{
+  return (id[axis] - ih->s[axis] + 1) * ih->p[axis] + ih->v[axis];
+}
+
+
 /* Python to C conversion */
 
 CTYPE get_dict_ctype(PyObject * dict, char key[8])
@@ -1071,7 +1081,10 @@ void PyDict_AsImageHeader(PyObject * dict, image_header * ih)
 
   ih->p[0] = get_dict_ctype(dict, "CDELT1");
   ih->p[1] = get_dict_ctype(dict, "CDELT2");
- 
+
+  ih->v[0] = get_dict_ctype(dict, "CRVAL1");
+  ih->v[1] = get_dict_ctype(dict, "CRVAL2");
+
   ih->R[0][0] = get_dict_ctype(dict, "R1_1");
   ih->R[0][1] = get_dict_ctype(dict, "R1_2");
   ih->R[0][2] = get_dict_ctype(dict, "R1_3");
