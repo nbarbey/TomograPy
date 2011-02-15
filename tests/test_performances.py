@@ -34,9 +34,9 @@ def test_cores():
     text += 'Cores'
     text += ''.join([' & ' + str(i + 1)  for i in xrange(nthread_max)])
     text += ' \\\\ \n' + 'Projection (s)'
-    text += ''.join([' & ' + str(pjt) for pjt in pj_times])
+    text += ''.join([' & %2.2f' % pjt for pjt in pj_times])
     text += ' \\\\ \n' + 'Backprojection (s)'
-    text += ''.join([' & ' + str(bpjt) for bpjt in bpj_times])
+    text += ''.join([' & %2.2f' % bpjt for bpjt in bpj_times])
     text += ' \\\\ \n'
     print text
 
@@ -67,9 +67,9 @@ def test_image_shape():
     text += 'Image shape'
     text += ''.join([' & ' + str(s) + " $\\times$ " + str(s)  for s in image_shapes])
     text += ' \\\\ \n' + 'Projection (s)'
-    text += ''.join([' & ' + str(pjt) for pjt in pj_times])
+    text += ''.join([' & %2.2f' % pjt for pjt in pj_times])
     text += ' \\\\ \n' + 'Backprojection (s)'
-    text += ''.join([' & ' + str(bpjt) for bpjt in bpj_times])
+    text += ''.join([' & %2.2f' % bpjt for bpjt in bpj_times])
     text += ' \\\\ \n'
     print text
 
@@ -98,9 +98,9 @@ def test_map_shape():
     text += 'Cube shape'
     text += ''.join([' & ' + str(s) + "$^3$"  for s in cube_shapes])
     text += ' \\\\ \n' + 'Projection (s)'
-    text += ''.join([' & ' + str(pjt) for pjt in pj_times])
+    text += ''.join([' & %2.2f' % pjt for pjt in pj_times])
     text += ' \\\\ \n' + 'Backprojection (s)'
-    text += ''.join([' & ' + str(bpjt) for bpjt in bpj_times])
+    text += ''.join([' & %2.2f' % bpjt for bpjt in bpj_times])
     text += ' \\\\ \n'
     print text
 
