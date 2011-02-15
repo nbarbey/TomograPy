@@ -96,11 +96,29 @@ def update_header(array):
     array.header.update('M2', yd)
     array.header.update('M3', zd)
     # convert to radians
-    array.header['CDELT1'] *= arcsecond_to_radian
-    array.header['CDELT2'] *= arcsecond_to_radian
+    cunit = array.header.get('CUNIT1')
+    conversion_func = cunit_to_conversion.get(cunit, no_conversion)
+
+    array.header['CDELT1'] = conversion_func(array.header['CDELT1'])
+    array.header['CRVAL1'] = conversion_func(array.header['CRVAL1'])
+
+    cunit = array.header.get('CUNIT2')
+    conversion_func = cunit_to_conversion.get(cunit, no_conversion)
+
+    array.header['CDELT2'] = conversion_func(array.header['CDELT2'])
+    array.header['CRVAL2'] = conversion_func(array.header['CRVAL2'])
     # others
     time_str = array.header['DATE_OBS']
     array.header.update('time', convert_time(time_str))
+
+def arcsec2radians(val):
+    return val * arcsecond_to_radian
+
+def no_conversion(val):
+    return val
+
+cunit_to_conversion = {'arcsec':arcsec2radians, 'degree':np.radians,
+                       None:no_conversion, '':no_conversion}
 
 def convert_time(time_str):
     # optionnaly remove Z
