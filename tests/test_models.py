@@ -9,7 +9,7 @@ import lo
 
 from test_cases import *
 
-models = [siddon.models.srt, siddon.models.stsrt, ]
+models = [siddon.models.srt, siddon.models.stsrt, siddon.models.thomson]
 
 def check_model(model, im_h, obj_h):
     obj = siddon.simu.object_from_header(obj_h)
@@ -27,7 +27,7 @@ def check_model(model, im_h, obj_h):
         new_obj *= (1 - obj_mask)
         data[:] = (P * new_obj.ravel()).reshape(data.shape)
         hypers = new_obj.ndim * (1e-10, )
-        sol = lo.acg(P, data.ravel(), D, hypers=hypers, tol=1e-10)
+        sol = lo.acg(P, data.ravel(), D, hypers=hypers, tol=1e-20)
         sol = fa.asfitsarray(sol.reshape(obj_mask.shape), header=obj.header)
         assert_almost_equal(sol[is_seen], new_obj[is_seen], decimal=1)
 
