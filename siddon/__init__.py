@@ -22,6 +22,7 @@ import simu
 import solar
 import phantom
 import models
+import display
 
 try:
     import lo
