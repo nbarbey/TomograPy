@@ -25,7 +25,7 @@ def data_movie(data, fig=None, pause=None, **kwargs):
     a = fig.gca()
     dmin, dmax = data.min(), data.max()
     n = data.shape[-1]
-    im0 = a.imshow(data[..., 0].T, **kwargs)
+    im0 = a.imshow(data[..., 0].T, origin="lower", **kwargs)
     plt.draw()
     for k in xrange(n):
         im0.set_data(data[..., k].T)
@@ -79,7 +79,7 @@ def sinogram(data, r, amin=-np.pi, amax=np.pi, n=None, fig=None, **kwargs):
     if fig is None:
         fig = plt.figure()
     ax = fig.gca()
-    im0 = ax.imshow(sino, **kwargs)
+    im0 = ax.imshow(sino, origin="lower", **kwargs)
     plt.draw()
     return sino
 
@@ -99,7 +99,7 @@ def display_object(obj):
         i *= obj.shape[0]
         j *= obj.shape[1]
         tmp[i:i + obj.shape[0], j:j + obj.shape[1]] = obj[..., k]
-    plt.imshow(tmp)
+    plt.imshow(tmp, origin="lower")
     plt.draw()
 
 def _max_divider(n):
@@ -220,7 +220,7 @@ def display_surface(obj, proj, title='', xlabel='', ylabel='',
     Calls extract surface and imshow.
     """
     my_proj = extract_surface(obj, proj, **kwargs)
-    plt.imshow(my_proj, **imshow_kwargs)
+    plt.imshow(my_proj, origin="lower", **imshow_kwargs)
     plt.draw()
     plt.title(title)
     plt.xlabel(xlabel)
