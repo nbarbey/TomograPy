@@ -88,7 +88,7 @@ def projector(data, cube, mask=None, obstacle=None, nthread=0):
     The data cube is updated in-place, so you should make a copy before
     calling projector.
 
-    Arguemnts
+    Arguments
     ---------
     data : 3d InfoArray
       Contains a concatenation of FitsArray images along a 3rd dimension.
@@ -96,7 +96,7 @@ def projector(data, cube, mask=None, obstacle=None, nthread=0):
     cube : 3d FitsArray
       The cubic map of intensity or absorption.
     obstacle : {None, "sun"}
-      Define an optional obstacke. If obstacle="sun", the ray-tracing is
+      Define an optional obstacle. If obstacle="sun", the ray-tracing is
       stopped when the ray reaches a sphere of radius one (the Sun in solar
       tomography).
 
