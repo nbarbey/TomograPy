@@ -46,4 +46,4 @@ exemple/siddon_secchi_mask.py or use directly the siddon/srt script.
 Home page
 =========
 
-http://nbarbey.dyndns.org/software/siddon.html
+https://github.com/nbarbey/siddon
