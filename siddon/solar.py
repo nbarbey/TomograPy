@@ -143,17 +143,24 @@ def convert_time(time_str):
     return current_time
 
 def filter_files(files, instrume=None, telescop=None,
-                 time_window=None, time_step=None):
+                 time_window=None, time_step=None, tmin=None, tmax=None):
     out_files = list()
     # sort list by time
     files.sort(cmp=time_compare)
     # if a time_window is given convert it to float
+    time_min = None
+    time_max = None
     if time_window is not None:
         time_min = convert_time(time_window[0])
         time_max = convert_time(time_window[1])
         # enforce order
         if time_min > time_max:
             time_min, time_max = time_max, time_min
+    # tmin, tmax take precedence
+    if tmin is not None:
+        time_min = convert_time(tmin)
+    if tmax is not None:
+        time_max = convert_time(tmax)
     if time_step is not None:
         if isinstance(time_step, str):
             time_step_val = convert_time(time_step)
@@ -169,11 +176,15 @@ def filter_files(files, instrume=None, telescop=None,
             if f.header['TELESCOP'] not in telescop:
                 bad = 1
         # check for time window
-        if time_window is not None:
+        if time_min is not None or time_max is not None:
             time_str = f.header['DATE_OBS']
             time_val = convert_time(time_str)
-            if (time_val > time_max) or (time_val < time_min):
-                bad = 1
+            if time_min is not None:
+                if (time_val < time_min):
+                    bad = 1
+            if time_max is not None:
+                if (time_val > time_max):
+                    bad = 1
         # check for time step
         if time_step is not None:
             time_str = f.header['DATE_OBS']
