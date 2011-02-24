@@ -334,6 +334,7 @@ def file_to_config(filename, config_filename=None):
     if config_filename is not None:
         fp = file(config_filename, "w")
         config.write(fp)
+        fp.close()
     return config
 
 def parse_tuple(my_str):
