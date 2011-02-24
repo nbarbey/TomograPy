@@ -24,6 +24,16 @@ Requirements
 
 You need numpy, pyfits, fitsarray for siddon to run.
 
+Documentation
+=============
+
+The documentation for siddon is embedded into the code as docstrings.
+To get started, take a look at siddon/__init__.py or in IPython, just
+do :
+
+>>> import siddon
+>>> siddon?
+
 Exemple
 =======
 
