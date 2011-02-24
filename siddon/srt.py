@@ -192,6 +192,9 @@ def main():
     sol.tofits(output)
 
 def inversion(path, obj_params, data_params, opt_params, mask_params):
+    """
+    Perform an inversion using given parameters.
+    """
     import numpy as np
     import lo, siddon
     import fitsarray as fa
@@ -225,6 +228,10 @@ def inversion(path, obj_params, data_params, opt_params, mask_params):
     return sol
 
 def persistency_header(object_header, data_params, mask_params, opt_params):
+    """
+    Store srt parameters into output header. This allows to know how a
+    given map has been computed.
+    """
     import fitsarray as fa
     # get full parameters dict for persistency
     full_params = dict(data_params, **mask_params)
@@ -247,6 +254,87 @@ def persistency_header(object_header, data_params, mask_params, opt_params):
     out_header.update(full_params_str)
     out_header = fa.dict2header(out_header)
     return out_header
+
+def params_from_header(h):
+    """
+    Generate a config dicts from header (with "persistency" keys)
+    """
+    from siddon import dict_to_array
+    #
+    obj_params = dict()
+    for k in ("naxis", "crpix", "crval", "cdelt"):
+        obj_params[k] = dict_to_array(h, k.upper())
+    #
+    data_params = dict()
+    for k in ("obj_rmin", "obj_rmax", "data_rmin", "data_rmax", "negative"):
+        try:
+            data_params[k] = h[k.upper()[:8]]
+        except KeyError:
+            pass
+    #
+    opt_params = dict()
+    for k in ("model", "optimizer", "maxiter", "tol"):
+        opt_params[k] = h[k.upper()[:8]]
+    opt_params["hyperparameters"] = dict_to_array(h, "HYPERS")
+    #
+    mask_params = dict()
+    for k in ("tmin", "tmax", "time_step", "bin_factor"):
+        try:
+            mask_params[k] = h[k.upper()[:8]]
+        except KeyError:
+            pass
+    for k in ("telescop", "instrument"):
+        try:
+            mask_params[k] = dict_to_array(h, k.upper()[:8])
+        except ValueError:
+            pass
+    return obj_params, data_params, opt_params, mask_params
+
+def file_to_config(filename, config_filename=None):
+    """
+    Convert info from header into configuration for srt inversion.
+
+    Arguments
+    ---------
+
+    filename (str):
+      The filename of the fits file (output of srt).
+
+    config_filename (str, optional):
+      If provided, the config is saved into this file.
+
+    Returns
+    -------
+
+    config (ConfigParser.RawConfigParser instance): A configuration
+      instance, only if config_filename is not provided.
+    """
+    import pyfits
+    import ConfigParser
+    # read data
+    h = dict(pyfits.fitsopen(filename)[0].header)
+    # convert to dictionaries
+    obj_params, data_params, opt_params, mask_params = params_from_header(h)
+    # generate config
+    config = ConfigParser.RawConfigParser()
+    # define sections
+    config.add_section("object")
+    config.add_section("data")
+    config.add_section("masking")
+    config.add_section("optimization")
+    # fill in sections
+    for k in obj_params:
+        config.set("object", k, obj_params[k])
+    for k in data_params:
+        config.set("data", k, data_params[k])
+    for k in opt_params:
+        config.set("optimization", k, opt_params[k])
+    for k in mask_params:
+        config.set("masking", k, mask_params[k])
+    if config_filename is not None:
+        fp = file(config_filename, "w")
+        config.write(fp)
+    return config
 
 def parse_tuple(my_str):
     """
