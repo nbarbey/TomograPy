@@ -291,7 +291,8 @@ def define_map_mask(cube, obj_rmin=None, obj_rmax=None, obj_cylinder=None,
         if obj_rmax is not None:
             obj_mask[R > obj_rmax] = 1
         if obj_cylinder is not None:
-            map = cylinder(fa.asfitsarray(cube, obj_cylinder))
+            map_ = cylinder(fa.asfitsarray(cube, obj_cylinder))
+            obj_mask[map_ == 1] =1
     return obj_mask
 
 def cylinder(cube, obj_cylinder):
