@@ -37,6 +37,7 @@ import solar
 import phantom
 import models
 import display
+import srt as srt_cli
 
 try:
     import lo
