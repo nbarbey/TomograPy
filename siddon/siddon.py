@@ -246,6 +246,7 @@ def check_projector_inputs(data, cube):
     """
     Check that inputs to projectors functions are correct.
     """
+    # headers types
     if not isinstance(cube.header, dict):
         cube.header = dict(cube.header)
     if not isinstance(data.header, list):
@@ -256,12 +257,17 @@ def check_projector_inputs(data, cube):
             data.header[i] = dict(data.header[i])
         # check rotation matrix
         try:
-            data.header[i]['R0_0']
+            data.header[i]['R1_1']
         except (KeyError):
             header_rotation_matrix(data.header[i])
     # ensure that data and map have the same data type
     if data.dtype != cube.dtype:
         raise ValueError("data and cube map should have the same data-type")
+    # check map border def
+    try:
+        cube.header['MMAX1']
+    except (KeyError):
+        map_borders(cube.header)
 
 def C_full_unit_vector(data):
     u = np.zeros(data.shape + (3,))
