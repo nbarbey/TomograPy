@@ -139,7 +139,7 @@ def convert_time(time_str):
     current_time += sec_float
     return current_time
 
-def filter_files(files, instrume=None, obsrvtry=None, detector=None, 
+def filter_files(files, instrume=None, telescop=None,
                  time_window=None, time_step=None):
     out_files = list()
     # sort list by time
@@ -162,11 +162,8 @@ def filter_files(files, instrume=None, obsrvtry=None, detector=None,
         if instrume is not None:
             if f.header['INSTRUME'] not in instrume:
                 bad = 1
-        if obsrvtry is not None:
-            if f.header['OBSRVTRY'] not in obsrvtry:
-                bad = 1
-        if detector is not None:
-            if f.header['DETECTOR'] not in detector:
+        if telescop is not None:
+            if f.header['TELESCOP'] not in telescop:
                 bad = 1
         # check for time window
         if time_window is not None:
