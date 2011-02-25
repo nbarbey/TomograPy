@@ -75,7 +75,7 @@ def _apply_data_mask(P, data, **kwargs):
     if (data_rmin is not None or data_rmax is not None or
         mask_negative is not False or mask_nan is not False):
         data_mask = solar.define_data_mask(data, **kwargs)
-        Md = lo.mask(data_mask)
+        Md = lo.mdmask(data_mask)
         # apply mask to model
         P = Md * P
     else:
@@ -142,7 +142,7 @@ def stsrt(data, cube, **kwargs):
     if obj_rmin is not None or obj_rmax is not None:
         Mo, obj_mask = mask_object(cube, **kwargs)
         obj_mask = obj_mask[..., np.newaxis].repeat(n, axis=-1)
-        Mo = lo.mask(obj_mask)
+        Mo = lo.ndmask(obj_mask)
         P = P * Mo.T
         D = [Di * Mo.T for Di in D]
     else:
@@ -157,7 +157,7 @@ def mask_object(cube, decimate=False, remove_nan=False, **kwargs):
         if decimate:
             Mo = lo.decimate(obj_mask, dtype=cube.dtype)
         else:
-            Mo = lo.mask(obj_mask, dtype=cube.dtype, remove_nan=remove_nan)
+            Mo = lo.ndmask(obj_mask, dtype=cube.dtype)
     return Mo, obj_mask
 
 def group_sum(ind, cube, data):
