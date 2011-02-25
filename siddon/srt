@@ -22,8 +22,7 @@ Options:
   -s --time_step     Time step between two images of the same kind.
   -w --time_window   Time window in which to look for data.
   -i --instrument    Instrument name(s).
-  -o --observatory   Observatory name(s).
-  -d --detector      Detector name(s).
+  -t --telescop      Telescps name(s).
 
   Object parameters:
 
@@ -60,7 +59,7 @@ Options:
 options = "hb:s:w:i:o:d:n"
 
 long_options = ["help", "config=", "bin=", "time_step=", "time_window=",
-                "instrument=", "observatory=", "detector=", 
+                "instrument=", "telescop=",
                 "naxis=", "crpix=", "cdelt=", "crval=",
                 "obj_rmin=", "obj_rmax=", "data_rmin=", "data_rmax=",
                 "negative",
@@ -100,8 +99,7 @@ def main():
     config = ConfigParser.RawConfigParser()
     config.read(config_file)
     data_params["instrume"] = parse_tuple(config.get("data", "instrument"))
-    data_params["obsrvtry"] = parse_tuple(config.get("data", "observatory"))
-    data_params["detector"] = parse_tuple(config.get("data", "detector"))
+    data_params["telescop"] = parse_tuple(config.get("data", "telescop"))
     data_params["bin_factor"] = config.getint("data", "bin")
     data_params["time_step"] = config.getfloat("data", "time_step")
     data_params["time_window"] = parse_tuple(config.get("data", "time_window"))
@@ -144,10 +142,8 @@ def main():
             data_params["time_window"] = parse_tuple(a)
         elif o in ("-i", "--instrument"):
             data_params["instrume"] = parse_tuple(a)
-        elif o in ("-o", "--observatory"):
-            data_params["obsrvtry"] = parse_tuple(a)
-        elif o in ("-d", "--detector"):
-            data_params["detector"] = parse_tuple(a)
+        elif o in ("-t", "--telescop"):
+            data_params["telescop"] = parse_tuple(a)
         # object parameters
         elif o == "--naxis":
             naxis = parse_tuple_int(a)
@@ -193,14 +189,8 @@ def main():
 
     # data
     data = list()
-    for instr in data_params["instrume"]:
-        for obs in data_params["obsrvtry"]:
-            for det in data_params["detector"]:
-                data.append(solar.read_data(path, **data_params))
-    data = solar.concatenate(data)
+    data = solar.read_data(path, **data_params)
     data = solar.sort_data_array(data)
-    # enforce 64 bits data XXX
-    data.header["BITPIX"][:] = -64
     # create object
     object_header = make_object_header(naxis, crpix, cdelt, crval)
     obj = fa.fitsarray_from_header(object_header)
