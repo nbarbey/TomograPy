@@ -20,9 +20,10 @@ Options:
 
   -b --bin           Bin factor of images.
   -s --time_step     Time step between two images of the same kind.
-  -w --time_window   Time window in which to look for data.
+  -m --tmin          Temporal beginning of data set
+  -x --tmax          Temporal end of data set
   -i --instrument    Instrument name(s).
-  -t --telescop      Telescps name(s).
+  -t --telescop      Telescops name(s).
 
   Object parameters:
 
@@ -56,9 +57,9 @@ Options:
 
 """
 
-options = "hb:s:w:i:o:d:n"
+options = "hb:s:m:x:i:o:d:n"
 
-long_options = ["help", "config=", "bin=", "time_step=", "time_window=",
+long_options = ["help", "config=", "bin=", "time_step=", "tmin=", "tmax=",
                 "instrument=", "telescop=",
                 "naxis=", "crpix=", "cdelt=", "crval=",
                 "obj_rmin=", "obj_rmax=", "data_rmin=", "data_rmax=",
@@ -100,7 +101,8 @@ def main():
     data_params["telescop"] = parse_tuple(config.get("data", "telescop"))
     data_params["bin_factor"] = config.getint("data", "bin")
     data_params["time_step"] = config.getfloat("data", "time_step")
-    data_params["time_window"] = parse_tuple(config.get("data", "time_window"))
+    data_params["tmin"] = config.get("data", "tmin")
+    data_params["tmax"] = config.get("data", "tmax")
     obj_params["naxis"] = parse_tuple_int(config.get("object", "naxis"))
     obj_params["crpix"] = parse_tuple_float(config.get("object", "crpix"))
     obj_params["cdelt"] = parse_tuple_float(config.get("object", "cdelt"))
@@ -136,8 +138,10 @@ def main():
             data_params["bin_factor"] = int(a)
         elif o in ("-s", "--time_step"):
             data_params["time_step"] = float(a)
-        elif o in ("-w", "--time_window"):
-            data_params["time_window"] = parse_tuple(a)
+        elif o in ("-m", "--tmin"):
+            data_params["tmin"] = a
+        elif o in ("-x", "--tmax"):
+            data_params["tmax"] = a
         elif o in ("-i", "--instrument"):
             data_params["instrume"] = parse_tuple(a)
         elif o in ("-t", "--telescop"):
@@ -230,7 +234,14 @@ def persistency_header(object_header, data_params, mask_params, opt_params):
     # select 8 first character and convert to strings
     full_params_str = dict()
     for k in full_params:
-        full_params_str[k[:8]] = full_params[k].__str__()
+        if hasattr(full_params[k], "__iter__"):
+            if len(full_params[k]) == 1:
+                full_params_str[k[:8]] = full_params[k][0].__str__()
+            else:
+                for i, p in enumerate(full_params[k]):
+                    full_params_str[k[:7] + str(i + 1)] = p.__str__()
+        else:
+            full_params_str[k[:8]] = full_params[k].__str__()
     # save configuration to object header
     out_header = dict(object_header)
     out_header.update(full_params_str)
