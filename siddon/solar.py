@@ -36,6 +36,9 @@ def read_data(path, dtype=np.float64, bin_factor=None, **kargs):
         except(IOError):
             pass
     files = filter_files(files, **kargs)
+    if len(files) == 0:
+        print("No file matching.")
+        return None
     for i, f in enumerate(files):
         fits_array = fa.hdu2fitsarray(f)
         if bin_factor is not None:
