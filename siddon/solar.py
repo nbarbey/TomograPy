@@ -281,18 +281,30 @@ def compute_rsun(data):
         rsun2[i] = np.arctan(1. / d) / data.header[i]['CDELT2']
     return rsun1, rsun2
 
-def define_map_mask(cube, obj_rmin=None, obj_rmax=None, **kwargs):
+def define_map_mask(cube, obj_rmin=None, obj_rmax=None, obj_cylinder=None,
+                    **kwargs):
     """
     Output a mask of shape cube.shape.
     """
     obj_mask = np.zeros(cube.shape, dtype=bool)
-    if obj_rmin is not None or obj_rmax is not None:
+    if obj_rmin is not None or obj_rmax is not None or obj_cylinder is not None:
         R = map_radius(fa.asfitsarray(cube))
         if obj_rmin is not None:
             obj_mask[R < obj_rmin] = 1
         if obj_rmax is not None:
             obj_mask[R > obj_rmax] = 1
+        if obj_cylinder is not None:
+            map = cylinder(fa.asfitsarray(cube, obj_cylinder))
     return obj_mask
+
+def cylinder(cube, obj_cylinder):
+    map_ = np.zeros(cube.shape)
+    x, y, z = cube.axes()
+    X, Y = np.meshgrid(x,y)
+    A = X**2 + Y**2 > obj_cylinder**2
+    for i, zt in enumerate(z):
+        map_[A==True, i]=1
+    return map_
 
 def map_radius(cube):
     """
