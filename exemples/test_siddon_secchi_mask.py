@@ -6,17 +6,12 @@ import lo
 import siddon
 from siddon.solar import read_data
 # data
-obsrvtry = ('STEREO_A', 'STEREO_B')
-data = siddon.solar.concatenate(
-    [read_data(os.path.join(os.getenv('HOME'), 'data', 'siddon', '171dec08'), 
-               bin_factor=4.,
-               obsrvtry=obs,
-               time_window=['2008-12-01T00:00:00.000', 
-                            '2008-12-15T00:00:00.000'],
-               time_step=8 * 3600.
-               )
-     for obs in obsrvtry])
-
+data = read_data(os.path.join(os.getenv('HOME'), 'data', 'siddon', '171dec08'),
+                 bin_factor=4.,
+                 time_window=['2008-12-01T00:00:00.000',
+                              '2008-12-15T00:00:00.000'],
+                 time_step=8 * 3600.
+                 )
 data = siddon.solar.sort_data_array(data)
 # scale A and B images
 # the ratio of sensitivity between EUVI A and B
