@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import time
 import numpy as np
-import scipy.sparse.linalg as spl
 import siddon
 import lo
 # object
@@ -25,15 +24,10 @@ t = time.time()
 x0 = P.T * y
 bpj = x0.reshape(obj.shape)
 print("projection time : " + str(time.time() - t))
-# coverage map
-weights = (P.T * np.ones(y.size)).reshape(obj.shape)
 # priors
 Ds = [lo.diff(obj.shape, axis=i) for i in xrange(3)]
-hypers = 1e-2 * np.ones(3)
-#Ds, hypers = [], []
 # inversion using scipy.sparse.linalg
 t = time.time()
-tol = 1e-6
-sol = lo.acg(P, y, Ds, hypers,  maxiter=100, tol=tol)
+sol = lo.acg(P, y, Ds, 1e-2 * np.ones(3),  maxiter=100, tol=1e-20)
 sol = sol.reshape(bpj.shape)
 print("inversion time : " + str(time.time() - t))
