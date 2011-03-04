@@ -16,7 +16,7 @@ image_shapes = [128, 256, 512, 1024]
 cube_shapes = [128, 256, 512, 1024]
 cube_shape0 = 128
 data_shape0 = 512
-n_images = 8
+n_images = 64
 
 def test_cores():
     obj = tomograpy.centered_cubic_map(3, cube_shape0)
