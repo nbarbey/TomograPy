@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import time
 import numpy as np
-import siddon
+import tomograpy
 # object
-obj = siddon.siddon.centered_cubic_map(3, 128, fill=1.)
+obj = tomograpy.centered_cubic_map(3, 128, fill=1.)
 # number of images
 n = 20
 # reshape object for 4d model
@@ -14,17 +14,17 @@ obj4.header['CRVAL4'] = 0.
 
 # data 
 radius = 200
-a = siddon.siddon.fov(obj.header, radius)
-data = siddon.siddon.centered_stack(a, 128, n_images=n, radius=radius,
+a = tomograpy.fov(obj.header, radius)
+data = tomograpy.centered_stack(a, 128, n_images=n, radius=radius,
                                     max_lon=np.pi)
 data[:] = np.zeros(data.shape)
 # projection
 t = time.time()
-data = siddon.projector4d(data, obj4)
+data = tomograpy.projector4d(data, obj4)
 print("projection time : " + str(time.time() - t))
 # backprojection
 x0 = obj4.copy()
 x0[:] = 0.
 t = time.time()
-x0 = siddon.backprojector4d(data, x0)
+x0 = tomograpy.backprojector4d(data, x0)
 print("backprojection time : " + str(time.time() - t))

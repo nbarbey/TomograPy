@@ -3,17 +3,17 @@ import numpy as np
 import os
 import copy
 import time
-import siddon
+import tomograpy
 import fitsarray as fa
 import lo
 
 # data 
-path = os.path.join(os.getenv('HOME'), 'data', 'siddon', 'cor1')
+path = os.path.join(os.getenv('HOME'), 'data', 'tomograpy., 'cor1')
 #obsrvtry = 'SOHO    '
 #instrume = 'LASCO   '
 time_window = ['2009/09/01 00:00:00.000', '2009/09/15 00:00:00.000']
 time_step = 8 * 3600. # one image every time_step seconds
-data = siddon.solar.read_data(path, bin_factor=8,
+data = tomograpy.solar.read_data(path, bin_factor=8,
                                #time_window=time_window, 
                                #time_step=time_step
                                )
@@ -31,7 +31,7 @@ header = {'CRPIX1':crpix[0], 'CRPIX2':crpix[1], 'CRPIX3':crpix[2],
           'CRVAL1':0., 'CRVAL2':0., 'CRVAL3':0.,}
 cube = fa.zeros(shape, header=header)
 t = time.time()
-cube = siddon.backprojector(data, cube, obstacle="sun")
+cube = tomograpy.backprojector(data, cube, obstacle="sun")
 print("backprojection time : " + str(time.time() - t))
 
 # inversion
@@ -44,7 +44,7 @@ kwargs={
     "data_rmax":2.5,
     "mask_negative":True
 }
-P, D, obj_mask, data_mask = siddon.models.thomson(data, cube, u, **kwargs)
+P, D, obj_mask, data_mask = tomograpy.models.thomson(data, cube, u, **kwargs)
 # bpj
 b = data.flatten()
 bpj = (P.T * b).reshape(cube.shape)

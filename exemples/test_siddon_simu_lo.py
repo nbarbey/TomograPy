@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 import time
 import numpy as np
-import siddon
+import tomograpy
 import lo
 # object
-obj = siddon.siddon.centered_cubic_map(3, 32)
-obj[:] = siddon.phantom.shepp_logan(obj.shape)
+obj = tomograpy.centered_cubic_map(3, 32)
+obj[:] = tomograpy.phantom.shepp_logan(obj.shape)
 # data
 radius = 200.
-a = siddon.siddon.fov(obj.header, radius)
-data = siddon.siddon.centered_stack(a, 128, n_images=60, radius=radius,
+a = tomograpy.fov(obj.header, radius)
+data = tomograpy.centered_stack(a, 128, n_images=60, radius=radius,
                                     max_lon=np.pi)
 # projector
-P = siddon.siddon_lo(data.header, obj.header)
+P = tomograpy.lo(data.header, obj.header)
 # projection
 t = time.time()
-data = siddon.projector(data, obj)
+data = tomograpy.projector(data, obj)
 print("projection time : " + str(time.time() - t))
 # data
 y = data.flatten()
