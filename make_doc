@@ -1,8 +1,8 @@
 #!/bin/bash
 mkdir doc
-pydoc2 -w siddon
-mv siddon.html doc/
-cd siddon
+pydoc2 -w tomograpy
+mv tomograpy.html doc/
+cd tomograpy
 pydoc2 -w ./
-rename '' siddon. *.html
+rename '' tomograpy. *.html
 mv *.html ../doc/
