@@ -13,7 +13,7 @@ from lo_wrapper import siddon_lo, siddon4d_lo
 import solar
 
 # constants
-#sigma = 7.940787e-30
+#sigma = 7.940787e-30 # impossible to double floating point precision
 sigma = 1.
 
 def srt(data, cube, **kwargs):
@@ -154,7 +154,8 @@ def mask_object(cube, decimate=False, remove_nan=False, **kwargs):
     obj_rmax = kwargs.get('obj_rmax', None)
     if obj_rmin is not None or obj_rmax is not None:
         obj_mask = solar.define_map_mask(cube, **kwargs)
-        if decimate:
+        # decimate is mandatory to remove nan because NaN * 0 = NaN
+        if decimate or remove_nan:
             Mo = lo.decimate(obj_mask, dtype=cube.dtype)
         else:
             Mo = lo.ndmask(obj_mask, dtype=cube.dtype)
@@ -212,7 +213,8 @@ def thomson(data, cube, u=.5, **kwargs):
     # priors
     D = [lo.diff(cube.shape, axis=i) for i in xrange(cube.ndim)]
     # masks
-    P, D, obj_mask = _apply_object_mask(P, D, cube, remove_nan=True, **kwargs)
+    kwargs['remove_nan'] = True
+    P, D, obj_mask = _apply_object_mask(P, D, cube, **kwargs)
     return P, D, obj_mask, data_mask
 
 def pb_thomson_lo(data, in_map, u, mask=None):
@@ -232,7 +234,7 @@ def pb_thomson_lo(data, in_map, u, mask=None):
 def _r2omega(r):
     "Compute the Omega angle knowing r (see Bilings 66 for def)."
     omega = np.zeros(r.shape)
-    omega = np.arcsin(1. / r)
+    omega = np.arcsin(1. / r) # assume r in solar radius
     omega[r == 0] = 0
     return omega
 
@@ -298,7 +300,7 @@ def _pb_map_coef(my_map, u):
         R = np.sqrt(R2)
         O = _r2omega(R)
         C1, C2 = _pb_thomson_coef(O)
-        coefs[..., i] = ((1 - u) * C1 + u * C2) / R2
+        coefs[..., i] = ((1 - u) * C1 + u * C2) / (R2 ** 2)
     # set infinite values due to divide by zero to 0.
     coefs[1 - np.isfinite(coefs)] = 0.
     return coefs * np.pi * sigma / 2.
