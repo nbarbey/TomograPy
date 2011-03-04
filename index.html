@@ -51,16 +51,14 @@
 
     <p>
 
-What is Siddon ?
-================
+<h3> What is Siddon ? </h3> 
 
 This is a fast parallelized tomography projector / backprojector.  It
 originates from solar tomography application but could be use for
 other applications. It uses the fast Siddon algorithm as its core.
 The parallelization is done with OpenMP on the C part of the code.
 
-Application in solar tomography
-===============================
+<h3> Application in solar tomography </h3>
 
 For solar astrophysics, Siddon allows to perform solar tomographic
 reconstructions of the corona. It can take SOHO or STEREO data and
@@ -68,13 +66,11 @@ output a 3-dimensional map of the corona. For now only
 Extreme-Ultraviolet data is handled but handling of coronographic data
 is planed along with handling of data from other spacecrafts.
 
-Requirements
-============
+<h3> Requirements </h3>
 
 You need numpy, pyfits, fitsarray for siddon to run.
 
-Documentation
-=============
+<h3> Documentation </h3>
 
 The documentation for siddon is embedded into the code as docstrings.
 To get started, take a look at siddon/__init__.py or in IPython, just
@@ -83,8 +79,7 @@ do :
 >>> import siddon
 >>> siddon?
 
-Exemple
-=======
+<h3> Exemple </h3>
 
 For an exemple on how to use siddon, see exemple/test_siddon_simu.py
 
