@@ -9,7 +9,7 @@ import lo
 
 from test_cases import *
 
-models = [siddon.models.srt, siddon.models.stsrt, siddon.models.thomson]
+models = [tomograpy.models.srt, tomograpy.models.stsrt, tomograpy.models.thomson]
 
 def check_model(model, im_h, obj_h):
     obj = siddon.simu.object_from_header(obj_h)
@@ -19,16 +19,17 @@ def check_model(model, im_h, obj_h):
     im_h['max_lon'] = 3 * np.pi
     data = siddon.simu.circular_trajectory_data(**im_h)
     if obj.dtype == data.dtype:
-        P, D, obj_mask, data_mask = model(data, obj, obj_rmin=1.)
-        w = (P.T * np.ones(data.size)).reshape(obj_mask.shape)
+        P, D, obj_mask, data_mask = model(data, obj, obj_rmin=1., decimate=True)
+        Mo = lo.decimate(obj_mask)
+        w = (Mo.T * (P.T * np.ones(data.size))).reshape(obj_mask.shape)
         is_seen = (w != 0)
         new_obj = fa.FitsArray(obj_mask.shape)
         new_obj = 1.
         new_obj *= (1 - obj_mask)
-        data[:] = (P * new_obj.ravel()).reshape(data.shape)
+        data[:] = (P * Mo * new_obj.ravel()).reshape(data.shape)
         hypers = new_obj.ndim * (1e-10, )
         sol = lo.acg(P, data.ravel(), D, hypers=hypers, tol=1e-20)
-        sol = fa.asfitsarray(sol.reshape(obj_mask.shape), header=obj.header)
+        sol = fa.asfitsarray((Mo.T * sol).reshape(obj_mask.shape), header=obj.header)
         assert_almost_equal(sol[is_seen], new_obj[is_seen], decimal=1)
 
 def test_models():
