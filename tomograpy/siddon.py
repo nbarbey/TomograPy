@@ -704,13 +704,23 @@ def array_to_dict(indict, name, arr, imin=1):
     """
     Set keywords defining an array as arri_j.
     """
+    try:
+        dtname = arr.dtype.name
+    except(AttributeError):
+        dtname = ""
+    if 'float' in dtname:
+        convert = lambda x: float(x)
+    elif 'int' in dtname:
+        convert = lambda x: int(x)
+    else:
+        convert = lambda x: x
     if arr.ndim == 1:
         for i in xrange(arr.shape[0]):
-            indict[name + str(i + imin)] = arr[i]
+            indict[name + str(i + imin)] = convert(arr[i])
     elif arr.ndim == 2:
         for i in xrange(arr.shape[0]):
             for j in xrange(arr.shape[1]):
-                indict[name + "%i_%i" % (i + imin, j + imin)] = arr[i, j]
+                indict[name + "%i_%i" % (i + imin, j + imin)] = convert(arr[i, j])
     else:
         raise ValueError("Not implemented for arr.ndim > 2")
 
