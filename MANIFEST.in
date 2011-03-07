@@ -1,8 +1,8 @@
-include siddon/C_siddon.c.template
+include tomograpy/C_siddon.c.template
 include AUTHOR
 include LICENCE_FR
 include LICENSE
 include README.rst
 recursive-include tests *.py
-exclude siddon/*.c
-exclude siddon/*.so
+exclude tomograpy/*.c
+exclude tomograpy/*.so

@@ -7,8 +7,8 @@ Testing phantom generation module.
 import nose
 from numpy.testing import *
 import numpy as np
-from siddon import phantom
-from siddon.phantom import *
+from tomograpy import phantom
+from tomograpy.phantom import *
 
 # test cases
 phantoms = [yu_ye_wang, shepp_logan, modified_shepp_logan]

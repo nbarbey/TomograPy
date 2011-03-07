@@ -3,7 +3,7 @@ import numpy as np
 
 names = ('C_siddon',) #'C_siddon4d')
 
-c_siddon_template = "siddon" + os.sep + "C_siddon.c.template"
+c_siddon_template = "tomograpy" + os.sep + "C_siddon.c.template"
 #c_siddon4d_template = "siddon" + os.sep + "C_siddon4d.c.template"
 templates = (c_siddon_template,)# c_siddon4d_template)
 

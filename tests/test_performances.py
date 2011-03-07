@@ -6,27 +6,33 @@ test performances and scalability of the code.
 import time
 import multiprocessing as mp
 import numpy as np
-import siddon
+import tomograpy
 from test_cases import *
 
 nthread_max = mp.cpu_count()
 d = 200
 
+image_shapes = [128, 256, 512, 1024]
+cube_shapes = [128, 256, 512, 1024]
+cube_shape0 = 128
+data_shape0 = 512
+n_images = 8
+
 def test_cores():
-    obj = siddon.centered_cubic_map(3, 128)
-    data = siddon.centered_stack(siddon.fov(obj, d), 512, n_images=64)
+    obj = tomograpy.centered_cubic_map(3, cube_shape0)
+    data = tomograpy.centered_stack(tomograpy.fov(obj, d), data_shape0, n_images=n_images)
     # projection
     pj_times = np.empty(nthread_max + 1)
     pj_times[0] = time.time()
     for nt in xrange(nthread_max):
-        siddon.projector(data, obj, nthread=nt + 1)
+        tomograpy.projector(data, obj, nthread=nt + 1)
         pj_times[nt + 1] = time.time()
     pj_times = pj_times[1:] - pj_times[:-1]
     # backprojection
     bpj_times = np.empty(nthread_max + 1)
     bpj_times[0] = time.time()
     for nt in xrange(nthread_max):
-        siddon.backprojector(data, obj, nthread=nt + 1)
+        tomograpy.backprojector(data, obj, nthread=nt + 1)
         bpj_times[nt + 1] = time.time()
     bpj_times = bpj_times[1:] - bpj_times[:-1]
     # pretty print
@@ -44,22 +50,21 @@ def test_n_images():
     NotImplemented
 
 def test_image_shape():
-    obj = siddon.centered_cubic_map(3, 128)
-    image_shapes = [128, 256, 512, 1024]
+    obj = tomograpy.centered_cubic_map(3, cube_shape0)
     # projection
-    pj_times = np.empty(len(image_shapes))
+    pj_times = np.empty(len(image_shapes) + 1)
     pj_times[0] = time.time()
     for i, s in enumerate(image_shapes):
-        data = siddon.centered_stack(siddon.fov(obj, d), s, n_images=64)
-        siddon.projector(data, obj)
+        data = tomograpy.centered_stack(tomograpy.fov(obj, d), s, n_images=n_images)
+        tomograpy.projector(data, obj)
         pj_times[i + 1] = time.time()
     pj_times = pj_times[1:] - pj_times[:-1]
     # backprojection
-    bpj_times = np.empty(len(image_shapes))
+    bpj_times = np.empty(len(image_shapes) + 1)
     bpj_times[0] = time.time()
     for i, s in enumerate(image_shapes):
-        data = siddon.centered_stack(siddon.fov(obj, d), s, n_images=64)
-        siddon.backprojector(data, obj)
+        data = tomograpy.centered_stack(tomograpy.fov(obj, d), s, n_images=n_images)
+        tomograpy.backprojector(data, obj)
         bpj_times[i + 1] = time.time()
     bpj_times = bpj_times[1:] - bpj_times[:-1]
     # pretty print
@@ -74,23 +79,22 @@ def test_image_shape():
     print text
 
 def test_map_shape():
-    obj = siddon.centered_cubic_map(3, 128)
-    data = siddon.centered_stack(siddon.fov(obj, d), 512, n_images=64)
-    cube_shapes = [128, 256, 512, 1024]
+    obj = tomograpy.centered_cubic_map(3, cube_shape0)
+    data = tomograpy.centered_stack(tomograpy.fov(obj, d), data_shape0, n_images=n_images)
     # projection
-    pj_times = np.empty(len(cube_shapes))
+    pj_times = np.empty(len(cube_shapes) + 1)
     pj_times[0] = time.time()
     for i, s in enumerate(cube_shapes):
-        obj = siddon.centered_cubic_map(3, s)
-        siddon.projector(data, obj)
+        obj = tomograpy.centered_cubic_map(3, s)
+        tomograpy.projector(data, obj)
         pj_times[i + 1] = time.time()
     pj_times = pj_times[1:] - pj_times[:-1]
     # backprojection
-    bpj_times = np.empty(len(cube_shapes))
+    bpj_times = np.empty(len(cube_shapes) + 1)
     bpj_times[0] = time.time()
     for i, s in enumerate(cube_shapes):
-        obj = siddon.centered_cubic_map(3, s)
-        siddon.backprojector(data, obj)
+        obj = tomograpy.centered_cubic_map(3, s)
+        tomograpy.backprojector(data, obj)
         bpj_times[i + 1] = time.time()
     bpj_times = bpj_times[1:] - bpj_times[:-1]
     # pretty print

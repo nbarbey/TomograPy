@@ -3,7 +3,7 @@
 import nose
 from numpy.testing import *
 import numpy as np
-import siddon
+import tomograpy
 import fitsarray as fa
 import lo
 
