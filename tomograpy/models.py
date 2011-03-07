@@ -137,12 +137,15 @@ def stsrt(data, cube, **kwargs):
     ng = data.shape[-1] / n
     P = siddon4d_lo(data.header, cube4.header, ng=ng, mask=data_mask, obstacle="sun")
     # priors
-    D = [lo.diff(cube4.shape, axis=i) for i in xrange(cube4.ndim)]
+    D = smoothness_prior(cube4, kwargs.get("height_prior", False))
     # mask object
     if obj_rmin is not None or obj_rmax is not None:
         Mo, obj_mask = mask_object(cube, **kwargs)
         obj_mask = obj_mask[..., np.newaxis].repeat(n, axis=-1)
-        Mo = lo.ndmask(obj_mask)
+        if kwargs.get("decimate", False) or kwargs.get("remove_nan", False):
+            Mo = lo.decimate(obj_mask)
+        else:
+            Mo = lo.ndmask(obj_mask)
         P = P * Mo.T
         D = [Di * Mo.T for Di in D]
     else:
