@@ -29,5 +29,6 @@ setup(name='TomograPy',
       url="http://nbarbey.dyndns.org/software/siddon.html",
       requires=['numpy', 'scipy', 'pyfits', 'fitsarray', 'lo'],
       packages=['tomograpy'],
+      scripts=['tomograpy/srt'],
       ext_modules=ext_modules
       )
