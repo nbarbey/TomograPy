@@ -34,15 +34,15 @@ in IPython, just do :
 >>> import tomograpy
 >>> tomograpy?
 
-Exemple
+Example
 =======
 
-For an exemple on how to use TomograPy, see
-exemple/test_siddon_simu.py
+For an example on how to use TomograPy, see
+example/test_siddon_simu.py
 
 For solar tomography, you need first to process data using
 http://www.lmsal.com/solarsoft/. Then you can take a look at
-exemple/siddon_secchi_mask.py or use directly the siddon/srt script.
+example/siddon_secchi_mask.py or use directly the siddon/srt script.
 
 Home page
 =========
