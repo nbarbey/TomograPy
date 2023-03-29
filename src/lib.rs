@@ -70,7 +70,7 @@ fn alpha_arr(d_min: [usize; 2], d_max: [usize; 2], p1: [f32; 2], p2: [f32; 2],  
     }
 }
 
-fn get_path(p1: [f32; 2], p2: [f32; 2], b: [f32; 2], delta: [f32; 2], densities: &Array<f32, Ix2>) -> f32 {
+fn get_path(p1: [f32; 2], p2: [f32; 2], b: [f32; 2], delta: [f32; 2], densities: &Array<f32, Ix2>, mask: &Array<bool, Ix2>) -> f32 {
     let n = densities.shape();
     let alpha_xmin = alpha_d(0, p1, p2, b, delta, 0).min(alpha_d(n[0]-1, p1, p2, b, delta, 0));
     let alpha_ymin = alpha_d(0, p1, p2, b, delta, 1).min(alpha_d(n[1]-1, p1, p2, b, delta, 1));
@@ -127,28 +127,37 @@ fn get_path(p1: [f32; 2], p2: [f32; 2], b: [f32; 2], delta: [f32; 2], densities:
     // }
     // println!("");
 
-
     if l.len() == 0 {
         0.
     } else {
-        let total: f32 = (1..i_m.len()).collect::<Vec<usize>>()
+        let coords = (1..i_m.len()).collect::<Vec<usize>>()
             .into_iter()
-            .filter(|m| (i_m[*m] < n[0]) && (j_m[*m] < n[1]))
-            .map(|m| densities[[i_m[m], j_m[m]]] * l[m])
-            .sum();
+            .filter(|&m| (i_m[m] < n[0]) && (j_m[m] < n[1]))
+            .map(|m| (m, mask[[i_m[m], j_m[m]]]));
+        let mut kept_coords = vec![];
+        for (m, keep) in coords {
+            if keep {
+                kept_coords.push(m);
+            } else {
+                break;
+            }
+        }
+        let total = kept_coords.into_iter()
+                                    .map(|m| densities[[i_m[m], j_m[m]]] * l[m])
+                                    .sum();
         total
     }
 }
 
 
-fn project(start: [f32; 2], end: [f32; 2], num_pixels: usize, densities: &Array<f32, Ix2>) -> Vec<f32> {
+fn project(start: [f32; 2], end: [f32; 2], num_pixels: usize, densities: &Array<f32, Ix2>, mask: &Array<bool, Ix2>) -> Vec<f32> {
     let b = [-0.5, -0.5];
     let delta = [1., 1.];
     (0..num_pixels).collect::<Vec<usize>>() 
         .into_par_iter()
         .map(|pixel| (pixel as f32) / (num_pixels as f32))
         .map(|fraction| [start[0] + fraction * (end[0] - start[0]), start[1] + fraction * (end[1] - start[1])])
-        .map(|origin| get_path(origin, [origin[0]+1.0, origin[1] + 12.0], b, delta, densities))
+        .map(|origin| get_path(origin, [origin[0]+1.0, origin[1] + 12.0], b, delta, densities, mask))
         .collect::<Vec<f32>>()
 }
 
@@ -167,7 +176,7 @@ fn project(start: [f32; 2], end: [f32; 2], num_pixels: usize, densities: &Array<
 // }
 
 #[pymodule]
-fn heliotom(_py: Python, m: &PyModule) -> PyResult<()> {
+fn tomograpy(_py: Python, m: &PyModule) -> PyResult<()> {
     // m.add_function(wrap_pyfunction!(axpy_py, m)?)?;
     Ok(())
 }
@@ -183,11 +192,12 @@ mod tests {
         let b = [-0.5, -0.5];
         let delta = [1., 1.];
         let mut densities = Array::<f32, Ix2>::zeros((10, 10).f());
+        let mask = Array::<u8, Ix2>::ones((10, 10)).mapv(|m| m == 1);
         densities[[1, 3]] = 0.25;
         densities[[2, 2]] = 0.5;
         densities[[2, 3]] = 1.0;
         densities[[5, 5]] = 2.0;
-        let path = get_path(p1, p2, b, delta, &densities);
+        let path = get_path(p1, p2, b, delta, &densities, &mask);
         println!("path is {}", path);
         assert_eq!((path - 1.25).abs() < 0.1, true);
     }
@@ -199,11 +209,12 @@ mod tests {
         let b = [-0.5, -0.5];
         let delta = [1., 1.];
         let mut densities = Array::<f32, Ix2>::zeros((10, 10).f());
+        let mask = Array::<u8, Ix2>::ones((10, 10)).mapv(|m| m == 1);
         densities[[1, 3]] = 0.25;
         densities[[2, 2]] = 0.5;
         densities[[2, 3]] = 1.0;
         densities[[5, 5]] = 2.0;
-        let path = get_path(p1, p2, b, delta, &densities);
+        let path = get_path(p1, p2, b, delta, &densities, &mask);
         println!("path is {}", path);
         assert_eq!((path - 2.0069).abs() < 0.1, true);
     }
@@ -216,6 +227,7 @@ mod tests {
         // let end = [-1.0, 13.0];
         let num_pixels: usize = 25;
         let mut densities = Array::<f32, Ix2>::zeros((10, 10).f());
+        let mask = Array::<u8, Ix2>::ones((10, 10)).mapv(|m| m == 1);
         densities[[1, 3]] = 0.25;
         densities[[2, 2]] = 0.5;
         densities[[2, 3]] = 1.0;
@@ -225,7 +237,7 @@ mod tests {
         // densities[[2, 2]] = 0.5;
         // densities[[3, 2]] = 1.0;
         // densities[[5, 5]] = 2.0;
-        let outcome = project(start, end, num_pixels, &densities); 
+        let outcome = project(start, end, num_pixels, &densities, &mask); 
         // outcome.into_iter().map(|e| print!("{} ", e));
         println!("length {}", outcome.len());
         for e in outcome.iter() {
