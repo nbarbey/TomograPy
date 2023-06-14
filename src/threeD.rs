@@ -138,12 +138,15 @@ fn get_path_3d(p1: [f32; 3], p2: [f32; 3], b: [f32; 3], delta: [f32; 3], densiti
     }
 }
 
-
-fn project_3d(x: &Array<f32, Ix2>, y: &Array<f32, Ix2>, z: &Array<f32, Ix2>, densities: &Array<f32, Ix3>, mask: &Array<bool, Ix3>) -> Array<f32, Ix2> {
-    // TODO: b and delta need to be function parameters that get passed in from Python
-    let b = [-0.5, -0.5, -0.5];
-    let delta = [1., 1., 1.];
-
+pub fn project_3d(x: &Array<f32, Ix2>,
+              y: &Array<f32, Ix2>,
+              z: &Array<f32, Ix2>,
+              densities: &Array<f32, Ix3>,
+              mask: &Array<bool, Ix3>,
+              b: [f32; 3],
+              delta: [f32; 3],
+              unit_normal: [f32; 3],
+              path_distance: f32) -> Array<f32, Ix2> {
     // Create coordinate array to iterate over
     let mut coords = Vec::<(usize, usize)>::new();
     for j in 0..x.shape()[0] {
@@ -151,10 +154,6 @@ fn project_3d(x: &Array<f32, Ix2>, y: &Array<f32, Ix2>, z: &Array<f32, Ix2>, den
             coords.push((i, j));
         }
     }
-
-    // Define unit normal and path distance 
-    let unit_normal = [1.0, 1.0, 1.0];
-    let path_distance = 5.0;
 
     // Iterate in parallel to calculate the contributions
     let calculation = coords.into_par_iter()
@@ -167,7 +166,7 @@ fn project_3d(x: &Array<f32, Ix2>, y: &Array<f32, Ix2>, z: &Array<f32, Ix2>, den
     // Map back to an image
     let new_shape = x.shape();
     let (row, col) = (new_shape[0], new_shape[1]);
-    let result = Array::from_shape_vec((row, col), calculation).unwrap();
+    let result = Array::from_shape_vec((row, col), calculation).unwrap(); // todo: more elegantly handle this unwrap
     result
 }
 
@@ -176,12 +175,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn simple_run() {   
-        let x = Array::from_elem((100, 100), 1.);
-        let y = Array::from_elem((100, 100), 1.);
-        let z = Array::from_elem((100, 100), 1.);
-        let densities = Array::<f32, Ix3>::zeros((50, 50, 50).f());
-        let mask = Array::<u8, Ix3>::ones((50, 50, 50)).mapv(|m| m == 1);
-        project_3d(&x, &y, &z, &densities, &mask);
+    fn simple_run() {
+        let b = [-0.5, -0.5, -0.5];
+        let delta = [1., 1., 1.];
+
+        let x = Array::from_elem((128, 128), 1.);
+        let y = Array::from_elem((128, 128), 1.);
+        let z = Array::from_elem((128, 128), 1.);
+        let densities = Array::<f32, Ix3>::zeros((128, 128, 128).f());
+        let mask = Array::<u8, Ix3>::ones((128, 128, 128)).mapv(|m| m == 1);
+
+        // Define unit normal and path distance 
+        let unit_normal = [1.0, 1.0, 1.0];  
+        let path_distance = 5.0;
+        
+        let result = project_3d(&x, &y, &z, &densities, &mask, b, delta, unit_normal, path_distance);
+        assert_eq!(result[[0, 0]], 0.0);
     }
 }
