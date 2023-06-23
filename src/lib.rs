@@ -1,5 +1,6 @@
 use numpy::ndarray::{ArrayD, ArrayViewD, ArrayViewMutD};
-use numpy::{IntoPyArray, PyArray2, PyReadonlyArray2, PyReadonlyArray3, PyReadonlyArrayDyn, PyArrayDyn};
+use numpy::{IntoPyArray, PyArray2, PyArray3,
+            PyReadonlyArray2, PyReadonlyArray3, PyReadonlyArrayDyn, PyArrayDyn};
 use ndarray::prelude::*;
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 
@@ -41,19 +42,44 @@ fn tomograpy(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
         result.into_pyarray(py)
     }
 
-    // fn backproject_3d_py<'py>(
-    //     x: PyReadonlyArray2<f32>,
-    //     y: PyReadonlyArray2<f32>,
-    //     z: PyReadonlyArray2<f32>,
-    //     image: PyReadonlyArray2<f32>,
-    //     cube: PyArray3<f32>,
-    //     b: [f32; 3],
-    //     delta: [f32; 3],
-    //     unit_normal: [f32; 3],
-    //     path_distance: f32
-    // ) -> &'py PyArray3<f32> {
-    //
-    // }
+    #[pyfn(m)]
+    #[pyo3(name = "backproject_3d")]
+    fn backproject_3d_py<'py>(
+        py: Python<'py>,
+        x: PyReadonlyArray2<f32>,
+        y: PyReadonlyArray2<f32>,
+        z: PyReadonlyArray2<f32>,
+        image: PyReadonlyArray2<f32>,
+        cube: &PyArray3<f32>,
+        mask: PyReadonlyArray3<bool>,
+        b: [f32; 3],
+        delta: [f32; 3],
+        unit_normal: [f32; 3],
+        path_distance: f32,
+        use_precise_method: bool
+    ) -> &'py PyArray3<f32> {
+        let x = x.as_array().to_owned();
+        let y = y.as_array().to_owned();
+        let z = z.as_array().to_owned();
+        let image = image.as_array().to_owned();
+        let mut cube = unsafe { cube.as_array_mut().to_owned()};
+        let mask = mask.as_array().to_owned();
+
+        let result = threeD::backproject_3d(
+            &x,
+            &y,
+            &z,
+            &image,
+            &mut cube,
+            &mask,
+            b,
+            delta,
+            unit_normal,
+            path_distance,
+            use_precise_method);
+
+        result.clone().into_pyarray(py)
+    }
 
     Ok(())
 }

@@ -207,7 +207,7 @@ pub fn backproject_3d<'a>(x: &'a Array<f32, Ix2>,
                       delta: [f32; 3],
                       unit_normal: [f32; 3],
                       path_distance: f32,
-                      use_precise_method: bool) -> &'a Array<f32, Ix3> {
+                      use_precise_method: bool) -> &'a Array<f32, Ix3> {  // todo: deal with use_precise_method
 
     // Create coordinate array to iterate over
     let mut coords = Vec::<(usize, usize)>::new();
@@ -291,8 +291,28 @@ pub fn backproject_3d<'a>(x: &'a Array<f32, Ix2>,
 mod tests {
     use super::*;
 
+    #[test]
+    fn simple_run() {
+        let b = [-0.5, -0.5, -0.5];
+        let delta = [1., 1., 1.];
+
+        let image_size = 128;
+        let x = Array::from_elem((image_size, image_size), 1.);
+        let y = Array::from_elem((image_size, image_size), 1.);
+        let z = Array::from_elem((image_size, image_size), 1.);
+        let densities = Array::<f32, Ix3>::zeros((128, 128, 128).f());
+        let mask = Array::<u8, Ix3>::ones((128, 128, 128)).mapv(|m| m == 1);
+
+        // Define unit normal and path distance
+        let unit_normal = [0.0, 1.0, 0.0];
+        let path_distance = 5.0;
+
+        let result = project_3d(&x, &y, &z, &densities, &mask, b, delta, unit_normal, path_distance);
+        assert_eq!(result[[0, 0]], 0.0);
+    }
+
     // #[test]
-    // fn simple_run() {
+    // fn simple_backproject() {
     //     let b = [-0.5, -0.5, -0.5];
     //     let delta = [1., 1., 1.];
     //
@@ -300,38 +320,18 @@ mod tests {
     //     let x = Array::from_elem((image_size, image_size), 1.);
     //     let y = Array::from_elem((image_size, image_size), 1.);
     //     let z = Array::from_elem((image_size, image_size), 1.);
-    //     let densities = Array::<f32, Ix3>::zeros((128, 128, 128).f());
-    //     let mask = Array::<u8, Ix3>::ones((128, 128, 128)).mapv(|m| m == 1);
+    //     let image = Array::<f32, Ix2>::zeros((image_size, image_size).f());
+    //
+    //     let cube_size = 128;
+    //     let mut cube = Array::<f32, Ix3>::zeros((cube_size, cube_size, cube_size).f());
+    //     let mask = Array::<u8, Ix3>::ones((cube_size, cube_size, cube_size)).mapv(|m| m == 100);
     //
     //     // Define unit normal and path distance
     //     let unit_normal = [1.0, 1.0, 1.0];
     //     let path_distance = 5.0;
     //
-    //     let result = project_3d(&x, &y, &z, &densities, &mask, b, delta, unit_normal, path_distance);
-    //     assert_eq!(result[[0, 0]], 0.0);
+    //     let result = backproject_3d(&x, &y, &z, &image, &mut cube, &mask, b, delta, unit_normal, path_distance, true);
+    //     //assert_eq!(result, 0);
+    //     assert_eq!(result[[0, 0, 0]], 0.0);
     // }
-
-    #[test]
-    fn simple_backproject() {
-        let b = [-0.5, -0.5, -0.5];
-        let delta = [1., 1., 1.];
-
-        let image_size = 512;
-        let x = Array::from_elem((image_size, image_size), 1.);
-        let y = Array::from_elem((image_size, image_size), 1.);
-        let z = Array::from_elem((image_size, image_size), 1.);
-        let image = Array::<f32, Ix2>::zeros((image_size, image_size).f());
-
-        let cube_size = 512;
-        let mut cube = Array::<f32, Ix3>::zeros((cube_size, cube_size, cube_size).f());
-        let mask = Array::<u8, Ix3>::ones((cube_size, cube_size, cube_size)).mapv(|m| m == 100);
-
-        // Define unit normal and path distance
-        let unit_normal = [1.0, 1.0, 1.0];
-        let path_distance = 5.0;
-
-        let result = backproject_3d(&x, &y, &z, &image, &mut cube, &mask, b, delta, unit_normal, path_distance, true);
-        //assert_eq!(result, 0);
-        assert_eq!(result[[0, 0, 0]], 0.0);
-    }
 }
