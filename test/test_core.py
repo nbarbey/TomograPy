@@ -24,7 +24,7 @@ def test_backproject():
     mask = np.ones((5, 5, 5), dtype=bool)
     b = (0, 0, 0)
     delta = (1, 1, 1)
-    unit_normal = (1E-6, 1, 1E-6)
+    unit_normal = (0, 1, 1E-6)
     path_distance = 5
     use_precise_method = True
 

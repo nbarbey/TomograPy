@@ -95,7 +95,10 @@ fn calculate_path_lengths(p1: [f32; 3], p2: [f32; 3],
     alpha_xyz.append(&mut alpha_x);
     alpha_xyz.append(&mut alpha_y);
     alpha_xyz.append(&mut alpha_z);
-    alpha_xyz.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    alpha_xyz.iter()
+        .filter(|&n| !n.is_nan() && !n.is_infinite())
+        .collect::<Vec<&f32>>()
+        .sort_by(|a, b| a.partial_cmp(b).unwrap());
     alpha_xyz.dedup();
 
     let d_conv = ((p1[0] - p2[0]).powi(2) + (p1[1] - p2[1]).powi(2) + (p1[2] - p2[2]).powi(2)).sqrt();
@@ -311,27 +314,27 @@ mod tests {
         assert_eq!(result[[0, 0]], 0.0);
     }
 
-    // #[test]
-    // fn simple_backproject() {
-    //     let b = [-0.5, -0.5, -0.5];
-    //     let delta = [1., 1., 1.];
-    //
-    //     let image_size = 512;
-    //     let x = Array::from_elem((image_size, image_size), 1.);
-    //     let y = Array::from_elem((image_size, image_size), 1.);
-    //     let z = Array::from_elem((image_size, image_size), 1.);
-    //     let image = Array::<f32, Ix2>::zeros((image_size, image_size).f());
-    //
-    //     let cube_size = 128;
-    //     let mut cube = Array::<f32, Ix3>::zeros((cube_size, cube_size, cube_size).f());
-    //     let mask = Array::<u8, Ix3>::ones((cube_size, cube_size, cube_size)).mapv(|m| m == 100);
-    //
-    //     // Define unit normal and path distance
-    //     let unit_normal = [1.0, 1.0, 1.0];
-    //     let path_distance = 5.0;
-    //
-    //     let result = backproject_3d(&x, &y, &z, &image, &mut cube, &mask, b, delta, unit_normal, path_distance, true);
-    //     //assert_eq!(result, 0);
-    //     assert_eq!(result[[0, 0, 0]], 0.0);
-    // }
+    #[test]
+    fn simple_backproject() {
+        let b = [-0.5, -0.5, -0.5];
+        let delta = [1., 1., 1.];
+
+        let image_size = 512;
+        let x = Array::from_elem((image_size, image_size), 1.);
+        let y = Array::from_elem((image_size, image_size), 1.);
+        let z = Array::from_elem((image_size, image_size), 1.);
+        let image = Array::<f32, Ix2>::zeros((image_size, image_size).f());
+
+        let cube_size = 128;
+        let mut cube = Array::<f32, Ix3>::zeros((cube_size, cube_size, cube_size).f());
+        let mask = Array::<u8, Ix3>::ones((cube_size, cube_size, cube_size)).mapv(|m| m == 100);
+
+        // Define unit normal and path distance
+        let unit_normal = [0.0, 1.0, 0.0];
+        let path_distance = 5.0;
+
+        let result = backproject_3d(&x, &y, &z, &image, &mut cube, &mask, b, delta, unit_normal, path_distance, true);
+        //assert_eq!(result, 0);
+        assert_eq!(result[[0, 0, 0]], 0.0);
+    }
 }
