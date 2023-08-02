@@ -369,7 +369,7 @@ mod tests {
         let unit_normal = [0.0, 1.0, 0.0];
         let path_distance = 5.0;
 
-        let result = backproject_3d(&x, &y, &z, &image, &mut cube, &mask, b, delta, unit_normal, path_distance, true);
+        let result = backproject_3d(&x, &y, &z, &image, &mut cube, &[cube_size, cube_size, cube_size], &mask, b, delta, unit_normal, path_distance, true);
         //assert_eq!(result, 0);
         assert_eq!(result[[0, 0, 0]], 0.0);
     }

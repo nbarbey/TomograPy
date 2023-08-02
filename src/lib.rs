@@ -5,6 +5,7 @@ use ndarray::prelude::*;
 use pyo3::{pymodule, types::PyModule, PyResult, Python};
 
 mod threeD;
+mod twoD;
 
 #[pymodule]
 fn tomograpy(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
