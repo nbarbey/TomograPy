@@ -62,6 +62,8 @@ fn tomograpy(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
         let y = y.as_array().to_owned();
         let z = z.as_array().to_owned();
         let image = image.as_array().to_owned();
+        let n = cube.shape();
+        // println!("{:?}", n);
         let mut cube = unsafe { cube.as_array_mut().to_owned()};
         let mask = mask.as_array().to_owned();
 
@@ -71,6 +73,7 @@ fn tomograpy(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
             &z,
             &image,
             &mut cube,
+            n,
             &mask,
             b,
             delta,

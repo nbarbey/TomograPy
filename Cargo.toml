@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 argmin = "0.8.0"
+assert_approx_eq = "1.1.0"
 itertools = "0.10.5"
 ndarray = "0.15.6"
 numpy = "0.18.0"
