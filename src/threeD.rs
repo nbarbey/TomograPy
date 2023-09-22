@@ -53,12 +53,12 @@ fn get_bounds_3d(alpha_min: f32, alpha_max: f32,
 
 fn alpha_arr_3d(d_min: [usize; 3], d_max: [usize; 3], p1: [f32; 3], p2: [f32; 3],  b: [f32; 3], delta: [f32; 3], d: usize) -> Vec<f32>{
     if p1[d] < p2[d] {
-        (d_min[d]..d_max[d]+1).collect::<Vec<usize>>()
+        (d_min[d]..=d_max[d]).collect::<Vec<usize>>()
                                 .into_iter()
                                 .map(|alpha| alpha_3d(alpha.try_into().unwrap(), p1, p2, b, delta, d))
                                 .collect::<Vec<f32>>()
     } else {
-        (d_min[d]..d_max[d]+1).rev()
+        (d_min[d]..=d_max[d]).rev()
                                 .collect::<Vec<usize>>()
                                 .into_iter()
                                 .map(|alpha| alpha_3d(alpha.try_into().unwrap(), p1, p2, b, delta, d))
@@ -97,30 +97,13 @@ fn calculate_path_lengths(p1: [f32; 3], p2: [f32; 3],
     alpha_xyz.append(&mut alpha_y);
     alpha_xyz.append(&mut alpha_z);
     alpha_xyz.insert(alpha_xyz.len(), alpha_max);
-    alpha_xyz.iter()
+    alpha_xyz = alpha_xyz.into_iter()
         .filter(|&n| n.is_finite())
-        .collect::<Vec<&f32>>();
+        .collect::<Vec<f32>>();
     alpha_xyz.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-        //.sort_by(|a, b| a.partial_cmp(b).unwrap());
-    // println!("{:?}", alpha_xyz);
-    // println!("{}", alpha_xyz[alpha_xyz.len()-1]);
-    // println!("{}", alpha_min);
     alpha_xyz.dedup();
 
     let d_conv = ((p1[0] - p2[0]).powi(2) + (p1[1] - p2[1]).powi(2) + (p1[2] - p2[2]).powi(2)).sqrt();
-
-    // let i_m =(1..alpha_xyz.len()-1).collect::<Vec<usize>>()
-    //                                 .par_iter()
-    //                                 .map(|m| phi_3d((alpha_xyz[*m] + alpha_xyz[*m-1])/2., p1, p2, b, delta, 0).floor() as usize)
-    //                                 .collect::<Vec<usize>>();
-    // let j_m =(1..alpha_xyz.len()-1).collect::<Vec<usize>>()
-    //                                 .par_iter()
-    //                                 .map(|m| phi_3d((alpha_xyz[*m] + alpha_xyz[*m-1])/2., p1, p2, b, delta, 1).floor() as usize)
-    //                                 .collect::<Vec<usize>>();
-    // let k_m =(1..alpha_xyz.len()-1).collect::<Vec<usize>>()
-    //                                 .par_iter()
-    //                                 .map(|m| phi_3d((alpha_xyz[*m] + alpha_xyz[*m-1])/2., p1, p2, b, delta, 2).floor() as usize)
-    //                                 .collect::<Vec<usize>>();
 
      let i_m =(1..alpha_xyz.len()).collect::<Vec<usize>>()
                                     .iter()
@@ -135,29 +118,46 @@ fn calculate_path_lengths(p1: [f32; 3], p2: [f32; 3],
                                     .map(|m| phi_3d((alpha_xyz[*m] + alpha_xyz[*m-1])/2., p1, p2, b, delta, 2).floor() as usize)
                                     .collect::<Vec<usize>>();
 
-
-    // let l = (1..alpha_xyz.len()-1).collect::<Vec<usize>>()
-    //                              .par_iter()
-    //                              .map(|m| (alpha_xyz[*m] - alpha_xyz[*m-1]) * d_conv)
-    //                              .collect::<Vec<f32>>();
-
     let l = (1..alpha_xyz.len()).collect::<Vec<usize>>()
                                  .iter()
                                  .map(|m| (alpha_xyz[*m] - alpha_xyz[*m-1]) * d_conv)
                                  .collect::<Vec<f32>>();
 
-    // for v in alpha_xyz.iter() {
-    //     println!("{}", v);
-    // }
-    // println!("{:?}", alpha_xyz);
-    //
-    // println!("len of alpha_xyz {}", alpha_xyz.len());
     (i_m, j_m, k_m, l)
+}
+
+fn calculate_num_matching_dims(p1: [f32; 3], p2: [f32; 3]) -> usize {
+    let mut n = 0;
+    if p1[0] == p2[0] {
+        n += 1;
+    }
+    if p1[1] == p2[1] {
+        n += 1;
+    }
+    if p1[2] == p2[2] {
+        n += 1;
+    }
+    n
+}
+
+fn determine_matching_dims(p1: [f32; 3], p2: [f32; 3]) -> Vec<usize> {
+    let mut out = vec![];
+    if p1[0] == p2[0] {
+        out.insert(0, 0);
+    }
+    if p1[1] == p2[1] {
+        out.insert(0, 1);
+    }
+    if p1[2] == p2[2] {
+        out.insert(0, 2);
+    }
+    out
 }
 
 fn get_path_3d(p1: [f32; 3], p2: [f32; 3], b: [f32; 3], delta: [f32; 3], densities: &Array<f32, Ix3>, mask: &Array<bool, Ix3>) -> f32 {
     let n = densities.shape();
-    if p1[0] != p2[0] && p1[1] != p2[1] && p1[2] != p2[2] {
+    let num_matching_dims = calculate_num_matching_dims(p1, p2);
+    if num_matching_dims == 0 {
         let (i_m, j_m, k_m, l) = calculate_path_lengths(p1, p2, b, delta, densities, mask);
 
         if l.len() == 0 {
@@ -175,15 +175,19 @@ fn get_path_3d(p1: [f32; 3], p2: [f32; 3], b: [f32; 3], delta: [f32; 3], densiti
                     break;
                 }
             }
-            // println!("{:?}", l);
-
             let total = kept_coords.into_par_iter()
                 .map(|m| densities[[i_m[m], j_m[m], k_m[m]]] * l[m])
                 .sum();
             total
         }
-    } else {
+    } else if num_matching_dims == 1 {
+        let matching_dim = determine_matching_dims(p1, p2)[0];
         -999.0
+    } else if num_matching_dims == 2 {
+        let matching_dims = determine_matching_dims(p1, p2);
+        -999.0
+    } else {
+        panic!("This case cannot be reached because 0, 1, or 2 dims can match in 3D space.")
     }
 }
 
@@ -198,19 +202,11 @@ pub fn project_3d(x: &Array<f32, Ix2>,
               path_distance: f32) -> Array<f32, Ix2> {
     // Create coordinate array to iterate over
     let mut coords = Vec::<(usize, usize)>::new();
-    for j in 0..x.shape()[0] {
-        for i in 0..x.shape()[1] {
+    for i in 0..x.shape()[0] {
+        for j in 0..x.shape()[1] {
             coords.push((i, j));
         }
     }
-
-    // for (i, j) in coords.iter() {
-    //     println!("({}, {}) ({}, {}, {}) ({}, {}, {})", i, j, x[[*i, *j]], y[[*i, *j]], z[[*i, *j]],
-    //              x[[*i, *j]] + unit_normal[0]*path_distance,
-    //                                          y[[*i, *j]] + unit_normal[1]*path_distance,
-    //                                          z[[*i, *j]] + unit_normal[2]*path_distance);
-    //
-    // }
 
     // Iterate in parallel to calculate the contributions
     let calculation = coords.into_par_iter()
@@ -238,7 +234,7 @@ pub fn backproject_3d<'a>(x: &'a Array<f32, Ix2>,
                       delta: [f32; 3],
                       unit_normal: [f32; 3],
                       path_distance: f32,
-                      use_precise_method: bool) -> &'a Array<f32, Ix3> {  // todo: deal with use_precise_method
+                      use_precise_method: bool) -> &'a Array<f32, Ix3> {
 
     // Create coordinate array to iterate over
     let mut coords = Vec::<(usize, usize)>::new();
@@ -260,13 +256,8 @@ pub fn backproject_3d<'a>(x: &'a Array<f32, Ix2>,
         }
     ).collect::<Vec<(f32, Vec<usize>, Vec<usize>, Vec<usize>, Vec<f32>)>>();
 
-    // println!("res {:?}", results[0]);
-    // println!("res {:?}", results[1]);
-    // println!("res {:?}", results[24]);
-
     for (value, i_m, j_m, k_m, l) in results {
         for m in 0..i_m.len() {
-            // if mask[[i_m[m], j_m[m], k_m[m]]] {
             if (i_m[m] < n[0]) && (j_m[m] < n[1]) && (k_m[m] < n[2]) && mask[[i_m[m], j_m[m], k_m[m]]] {
                 cube[[i_m[m], j_m[m], k_m[m]]] += value * l[m];
             } else {
@@ -274,52 +265,6 @@ pub fn backproject_3d<'a>(x: &'a Array<f32, Ix2>,
             }
         }
     }
-    // coords.into_par_iter().for_each(|(i,j)|
-    //     {
-    //         let p1 = [x[[i, j]], y[[i, j]], z[[i, j]]];
-    //     let p2 =  [x[[i, j]] + unit_normal[0]*path_distance,
-    //                      y[[i, j]] + unit_normal[1]*path_distance,
-    //                      z[[i, j]] + unit_normal[2]*path_distance];
-    //
-    //     if use_precise_method {
-    //         let (i_m, j_m, k_m, l) = calculate_path_lengths(p1, p2, b, delta, cube, mask);
-    //
-    //         // TODO: worry about if there's an obstacle
-    //
-    //         for m in 0..i_m.len() {
-    //             if mask[[i_m[m], j_m[m], k_m[m]]] {
-    //                 //cube[[i_m[m], j_m[m], k_m[m]]] += image[[i, j]] * l[m];
-    //             } else {
-    //                 break;
-    //             }
-    //         }
-    //     } else
-    //     {  // TODO: implement an imprecise method?
-    //         cube[[0, 0, 0]] = 0.;
-    //     }
-    //     });
-
-    // for (i, j) in coords.into_iter() {
-    //     let p1 = [x[[i, j]], y[[i, j]], z[[i, j]]];
-    //     let p2 =  [x[[i, j]] + unit_normal[0]*path_distance,
-    //                      y[[i, j]] + unit_normal[1]*path_distance,
-    //                      z[[i, j]] + unit_normal[2]*path_distance];
-    //
-    //     if use_precise_method {
-    //         let (i_m, j_m, k_m, l) = calculate_path_lengths(p1, p2, b, delta, cube, mask);
-    //
-    //         for m in 0..i_m.len() {
-    //             if mask[[i_m[m], j_m[m], k_m[m]]] {
-    //                 cube[[i_m[m], j_m[m], k_m[m]]] += image[[i, j]] * l[m];
-    //             } else {
-    //                 break;
-    //             }
-    //         }
-    //     } else
-    //     {  // TODO: implement an imprecise method?
-    //         cube[[0, 0, 0]] = 0.;
-    //     }
-    // }
     cube
 }
 
@@ -349,7 +294,6 @@ mod tests {
         assert_eq!(result[[0, 0]], 0.0);
     }
 
-    #[ignore]
     #[test]
     fn simple_backproject() {
         let b = [-0.5, -0.5, -0.5];
