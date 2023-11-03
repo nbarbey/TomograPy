@@ -2,6 +2,9 @@
 TomograPy : A python tomography package
 ======================================
 
+❗❗❗ A new version of this repo is being developed as `solartom <https://github.com/jmbhughes/solartom>`_ ❗❗❗
+
+
 What is TomograPy ?
 ===================
 
